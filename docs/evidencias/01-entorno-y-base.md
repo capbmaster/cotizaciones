@@ -1,6 +1,6 @@
 # Evidencia 01 — Entorno y base tecnológica
 
-Estado: **en curso** (Pasos 1–8 registrados; Paso 9 pendiente). Fecha: 2026-09-13 (Bogotá).
+Estado: **Fase 01 terminada** (Pasos 1–9). Fecha: 2026-09-13 (Bogotá).
 
 ## Paso 1 — Herramientas locales
 
@@ -240,3 +240,55 @@ Verificación (en `dev`):
 | `uv run --locked python scripts/verify_distribution.py` | Construye `cotizaciones-0.1.0-py3-none-any.whl` e imprime `Wheel instalado importado fuera del arbol fuente: /tmp/cotizaciones-distribution-bm0_7ykl/environment/lib/python3.12/site-packages/cotizaciones/__init__.py` |
 
 `migraciones` todavía no existe, así que se omite en el comando de mypy hasta la Fase 04.
+
+## Paso 9 — CI unitario, README y cierre
+
+Archivos: `.github/workflows/ci.yml` y `README.md`; `pyproject.toml` recupera `readme = "README.md"`.
+
+- **CI:** job `verificacion-unitaria` en `ubuntu-24.04`. Pasos:
+  - checkout;
+  - instala uv 0.10.9 con el instalador oficial versionado (`https://astral.sh/uv/0.10.9/install.sh`);
+  - `uv python install` (lee `.python-version`, 3.12.3) y `uv sync --locked`;
+  - ruff (check y format), mypy sobre `src tests scripts` y pytest sobre `tests/unitarias tests/api tests/contratos`;
+  - `scripts/verify_distribution.py`, que el plan no pide en el CI pero se añade porque es parte de la verificación estándar.
+  - Los jobs de integración y compatibilidad llegan en los Pasos 30, 42 y 57.
+- **README:** propósito, estado, entorno Docker, arranque, configuración (enlace a 00 §11 y `.env.example`) y verificación estándar.
+
+Verificación estándar completa (en `dev`, salvo `git diff --check` y el YAML, que se ejecutaron en el host):
+
+| Comando | Resultado |
+|---|---|
+| `uv sync --locked` | Lockfile vigente tras añadir `readme`; solo se reconstruyó `cotizaciones` |
+| `uv run --locked pytest tests -q -s --tb=short` | 52 passed, 1 warning (Starlette/anyio, de terceros) |
+| `uv run --locked ruff check .` | All checks passed |
+| `uv run --locked ruff format --check .` | 34 files already formatted |
+| `uv run --locked mypy src tests scripts` | Success: no issues found in 21 source files |
+| `uv run --locked python scripts/verify_distribution.py` | `Wheel instalado importado fuera del arbol fuente: /tmp/cotizaciones-distribution-qolkgbga/environment/lib/python3.12/site-packages/cotizaciones/__init__.py` |
+| `git diff --check` | Sin salida, exit 0. Solo cubre archivos ya versionados: casi todo el trabajo aún no está en seguimiento |
+| YAML del CI (Ruby `YAML.load_file`, en el host) | Válido: job `verificacion-unitaria`, 8 pasos |
+
+Arranque manual sin base (uvicorn en `dev` con `--host 0.0.0.0 --port 8002`; `curl` desde el host):
+
+| Petición | Respuesta |
+|---|---|
+| `GET /health/live` | 200 `{"status":"ok","service":"cotizaciones"}` |
+| `GET /health/ready` | 503 `{"status":"no_listo","motivo":"base_no_configurada","componentes":{}}` |
+| `SIGTERM` al proceso uvicorn | Log: `Shutting down` → `Waiting for application shutdown.` → `Application shutdown complete.` → `Finished server process`; terminó dentro del plazo de 10 s |
+
+El primer `curl` devolvió `(52) Empty reply from server`. El reenvío de puertos de Docker aceptó la conexión antes de que uvicorn escuchara, y `--retry-connrefused` no reintenta ese caso. Con `--retry-all-errors` respondió como se esperaba, y el log confirma que la app no falló.
+
+## Cierre de la fase
+
+- **Terminado:**
+  - entorno reproducible en Docker;
+  - paquete instalable (wheel verificado fuera de `src`);
+  - `Settings` y `Database`;
+  - app FastAPI con lifespan, `/health/live` y `/health/ready`;
+  - aislamiento de imports (sin `pulsar` ni `solicitudes_partner`, sin conexiones al importar);
+  - CI unitario definido.
+- **Limitaciones:**
+  - no hay procesamiento durable, consumo de Pulsar ni publicación de resultados; **todavía no se afirma capacidad para E8**;
+  - `procesar_mensajeria` entrega un estado vacío;
+  - el CI no se ha ejecutado en GitHub porque no se ha hecho push; su sintaxis y sus comandos se validaron localmente;
+  - sigue pendiente la observación sobre `connect_timeout` (Paso 6).
+- **Siguiente dependencia:** Fase 02 (Pasos 10–16), el modelo de dominio puro. Los contratos de 00 ya están fijados y la fase no necesita infraestructura.
