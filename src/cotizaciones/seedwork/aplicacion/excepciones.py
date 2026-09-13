@@ -1,0 +1,2 @@
+class ColisionPersistencia(RuntimeError):
+    pass
