@@ -62,7 +62,9 @@ def test_statement_timeout_viaja_como_opcion_de_conexion(monkeypatch: pytest.Mon
     finally:
         base.close()
     conexion.assert_called()
-    assert "-c statement_timeout=1234" in conexion.call_args.kwargs["options"]
+    opciones = conexion.call_args.kwargs["options"]
+    assert "-c statement_timeout=1234" in opciones
+    assert "-c search_path=public" in opciones
 
 
 def test_verificar_con_puerto_cerrado_devuelve_falso_sin_propagar() -> None:

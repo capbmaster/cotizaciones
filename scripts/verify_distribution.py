@@ -10,8 +10,10 @@ from pathlib import Path
 
 import cotizaciones
 from cotizaciones.api.app import create_app
-from cotizaciones.config.bootstrap import componer_procesamiento
+from cotizaciones.config.bootstrap import componer_procesamiento, componer_procesamiento_sql
 from cotizaciones.config.database import create_database
+from cotizaciones.config.persistencia import crear_uow_cotizaciones, metadata
+from cotizaciones.seedwork.infraestructura.despacho_outbox import DespachadorOutbox
 from cotizaciones.config.settings import Settings
 from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
 from cotizaciones.modulos.cotizaciones.aplicacion.handlers.procesar_peticion import (
@@ -34,6 +36,16 @@ assert issubclass(Cotizacion, AgregacionRaiz)
 assert callable(resolver_oferta)
 assert callable(componer_procesamiento)
 assert ProcesarPeticionHandler.consumidor == "cotizaciones.procesar_peticion"
+assert callable(componer_procesamiento_sql) and callable(crear_uow_cotizaciones)
+assert callable(DespachadorOutbox)
+assert {
+    "cotizaciones.catalogos",
+    "cotizaciones.ofertas_catalogo",
+    "cotizaciones.cotizaciones",
+    "mensajeria.inbox",
+    "mensajeria.outbox",
+    "mensajeria.eventos",
+} <= set(metadata.tables)
 print(f"Wheel instalado importado fuera del arbol fuente: {paquete}")
 """
 

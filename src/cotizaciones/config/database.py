@@ -33,6 +33,11 @@ def create_database(
         pool_size=pool_size,
         max_overflow=max_overflow,
         pool_pre_ping=True,
-        connect_args={"options": f"-c statement_timeout={statement_timeout_ms}"},
+        # search_path fijo: con el search_path por defecto ("$user", public) el esquema
+        # "cotizaciones" coincide con el usuario "cotizaciones" y pasaría a ser el esquema
+        # por defecto, confundiendo la reflexión de Alembic y la ubicación de alembic_version.
+        connect_args={
+            "options": f"-c statement_timeout={statement_timeout_ms} -c search_path=public"
+        },
     )
     return Database(engine=engine, session_factory=sessionmaker(bind=engine))

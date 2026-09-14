@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "ofertas": [
+    {
+      "id_proveedor": "00000000-0000-0000-0000-00000000a101",
+      "categoria": "plomeria",
+      "tipo_red": "GENERAL_HDA",
+      "id_partner": null,
+      "importe_menor": 15000000,
+      "moneda": "COP"
+    },
+    {
+      "id_proveedor": "00000000-0000-0000-0000-00000000a102",
+      "categoria": "plomeria",
+      "tipo_red": "GENERAL_HDA",
+      "id_partner": null,
+      "importe_menor": 12000000,
+      "moneda": "COP"
+    },
+    {
+      "id_proveedor": "00000000-0000-0000-0000-00000000b101",
+      "categoria": "plomeria",
+      "tipo_red": "HOMOLOGADA_PARTNER",
+      "id_partner": "00000000-0000-0000-0000-000000000002",
+      "importe_menor": 18000000,
+      "moneda": "COP"
+    },
+    {
+      "id_proveedor": "00000000-0000-0000-0000-00000000a201",
+      "categoria": "electricidad",
+      "tipo_red": "GENERAL_HDA",
+      "id_partner": null,
+      "importe_menor": 20000000,
+      "moneda": "COP"
+    },
+    {
+      "id_proveedor": "00000000-0000-0000-0000-00000000a301",
+      "categoria": "cerrajeria",
+      "tipo_red": "GENERAL_HDA",
+      "id_partner": null,
+      "importe_menor": 9000000,
+      "moneda": "COP"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from cotizaciones.modulos.cotizaciones.dominio.entidades import Cotizacion
 from cotizaciones.modulos.cotizaciones.dominio.objetos_valor import (
     CatalogoVigente,
     DatosPeticion,
@@ -94,3 +95,21 @@ def origen_comando(**cambios: Any) -> OrigenComando:
         causacion=CAUSACION,
     )
     return replace(base, **cambios)
+
+
+def cotizacion_resuelta(
+    catalogo: CatalogoVigente | None = None,
+    *,
+    id: UUID = ID_COTIZACION,
+    id_evento: UUID = ID_EVENTO,
+    **cambios_peticion: Any,
+) -> Cotizacion:
+    """Cotización F1 resuelta con el catálogo de laboratorio, con su evento pendiente."""
+    return Cotizacion.resolver(
+        id=id,
+        peticion=datos_peticion(**cambios_peticion),
+        origen=origen_comando(),
+        catalogo=catalogo or catalogo_laboratorio(),
+        id_evento=id_evento,
+        instante=INSTANTE_RESULTADO,
+    )

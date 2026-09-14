@@ -8,6 +8,19 @@ MODULOS_SIN_MENSAJERIA = (
     "cotizaciones.api.app",
     "cotizaciones.config.settings",
     "cotizaciones.config.database",
+    "cotizaciones.config.persistencia",
+    "cotizaciones.config.rutas",
+    "cotizaciones.seedwork.infraestructura.orm",
+    "cotizaciones.seedwork.infraestructura.serializacion",
+    "cotizaciones.seedwork.infraestructura.inbox",
+    "cotizaciones.seedwork.infraestructura.outbox",
+    "cotizaciones.seedwork.infraestructura.despacho_outbox",
+    "cotizaciones.seedwork.infraestructura.unidad_trabajo_sqlalchemy",
+    "cotizaciones.modulos.cotizaciones.infraestructura.orm",
+    "cotizaciones.modulos.cotizaciones.infraestructura.mapeadores",
+    "cotizaciones.modulos.cotizaciones.infraestructura.serializacion",
+    "cotizaciones.modulos.cotizaciones.infraestructura.repositorios",
+    "cotizaciones.modulos.cotizaciones.infraestructura.unidad_trabajo",
 )
 PROHIBIDOS = ("pulsar", "solicitudes_partner")
 
