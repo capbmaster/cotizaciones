@@ -1,0 +1,15 @@
+{
+  "event_id": "00000000-0000-0000-0000-000000000032",
+  "tipo": "CotizacionRechazada.v1",
+  "version_contrato": 1,
+  "instante": "2026-09-12T15:00:04+00:00",
+  "correlacion": "00000000-0000-0000-0000-000000000001",
+  "causacion": "00000000-0000-0000-0000-000000000022",
+  "id_peticion": "00000000-0000-0000-0000-000000000021",
+  "id_trabajo": "00000000-0000-0000-0000-000000000020",
+  "id_solicitud": "00000000-0000-0000-0000-000000000001",
+  "id_partner": "00000000-0000-0000-0000-000000000002",
+  "version_catalogo": 1,
+  "version_cotizacion": 1,
+  "motivo": "SIN_OFERTA_PARA_CATEGORIA"
+}

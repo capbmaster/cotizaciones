@@ -14,6 +14,7 @@ from cotizaciones.modulos.cotizaciones.dominio.objetos_valor import CatalogoVige
 
 from ..unitarias.dominio.datos import catalogo_laboratorio
 from .datos import registrar_catalogo
+from .pulsar import LaboratorioPulsar, laboratorio_pulsar
 
 URL_PREDETERMINADA = (
     "postgresql+psycopg://cotizaciones:cotizaciones_local@127.0.0.1:55436/cotizaciones"
@@ -70,3 +71,10 @@ def catalogo_v1(base: Database) -> CatalogoVigente:
     catalogo = catalogo_laboratorio()
     registrar_catalogo(base, catalogo)
     return catalogo
+
+
+@pytest.fixture
+def laboratorio(base: Database) -> Iterator[LaboratorioPulsar]:
+    """Tópicos únicos por prueba y Settings apuntando a la base temporal de la sesión."""
+    with laboratorio_pulsar(base.engine.url.render_as_string(hide_password=False)) as lab:
+        yield lab

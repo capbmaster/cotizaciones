@@ -39,6 +39,22 @@ def marcas_sin_efecto(base: Database) -> int:
         return int(cantidad or 0)
 
 
+def salidas_enviadas(base: Database) -> int:
+    with base.engine.connect() as conexion:
+        cantidad = conexion.scalar(
+            text("SELECT count(*) FROM mensajeria.outbox WHERE enviada_en IS NOT NULL")
+        )
+        return int(cantidad or 0)
+
+
+def salidas_pendientes(base: Database) -> int:
+    with base.engine.connect() as conexion:
+        cantidad = conexion.scalar(
+            text("SELECT count(*) FROM mensajeria.outbox WHERE enviada_en IS NULL")
+        )
+        return int(cantidad or 0)
+
+
 def registrar_catalogo(base: Database, catalogo: CatalogoVigente, *, activar: bool = True) -> None:
     with crear_uow_cotizaciones(base) as unidad:
         unidad.catalogos.registrar_version(catalogo, huella_catalogo(catalogo))

@@ -1,0 +1,17 @@
+{
+  "command_id": "00000000-0000-0000-0000-000000000022",
+  "tipo": "SolicitarCotizacion.v1",
+  "version_contrato": 1,
+  "instante": "2026-09-12T15:00:03+00:00",
+  "correlacion": "00000000-0000-0000-0000-000000000001",
+  "causacion": "00000000-0000-0000-0000-00000000000f",
+  "id_peticion": "00000000-0000-0000-0000-000000000021",
+  "id_trabajo": "00000000-0000-0000-0000-000000000020",
+  "id_solicitud": "00000000-0000-0000-0000-000000000001",
+  "id_partner": "00000000-0000-0000-0000-000000000002",
+  "categoria": "plomeria",
+  "tipo_solicitud": "SINIESTRO",
+  "tipo_red": "GENERAL_HDA",
+  "id_politica": "00000000-0000-0000-0000-000000000003",
+  "version_politica": 1
+}

@@ -1,0 +1,78 @@
+{
+  "type": "record",
+  "name": "CotizacionRegistradaV1",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string"
+    },
+    {
+      "name": "tipo",
+      "type": "string"
+    },
+    {
+      "name": "version_contrato",
+      "type": "int"
+    },
+    {
+      "name": "instante",
+      "type": "string"
+    },
+    {
+      "name": "correlacion",
+      "type": "string"
+    },
+    {
+      "name": "causacion",
+      "type": "string"
+    },
+    {
+      "name": "id_peticion",
+      "type": "string"
+    },
+    {
+      "name": "id_trabajo",
+      "type": "string"
+    },
+    {
+      "name": "id_solicitud",
+      "type": "string"
+    },
+    {
+      "name": "id_partner",
+      "type": "string"
+    },
+    {
+      "name": "version_catalogo",
+      "type": "int"
+    },
+    {
+      "name": "version_cotizacion",
+      "type": "int"
+    },
+    {
+      "name": "id_cotizacion",
+      "type": "string"
+    },
+    {
+      "name": "id_proveedor",
+      "type": "string"
+    },
+    {
+      "name": "importe_menor",
+      "type": "long"
+    },
+    {
+      "name": "moneda",
+      "type": "string"
+    },
+    {
+      "name": "categoria",
+      "type": "string"
+    },
+    {
+      "name": "tipo_red",
+      "type": "string"
+    }
+  ]
+}

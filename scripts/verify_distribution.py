@@ -14,6 +14,25 @@ from cotizaciones.config.bootstrap import componer_procesamiento, componer_proce
 from cotizaciones.config.database import create_database
 from cotizaciones.config.persistencia import crear_uow_cotizaciones, metadata
 from cotizaciones.seedwork.infraestructura.despacho_outbox import DespachadorOutbox
+from pulsar.schema import AvroSchema
+from cotizaciones.infraestructura.despacho import iniciar_despacho
+from cotizaciones.modulos.cotizaciones.infraestructura.consumidor_peticiones import (
+    ConsumidorPeticiones,
+)
+from cotizaciones.modulos.cotizaciones.infraestructura.esquemas.v1.comandos import (
+    SolicitarCotizacionV1,
+)
+from cotizaciones.modulos.cotizaciones.infraestructura.esquemas.v1.eventos import (
+    CotizacionRechazadaV1,
+    CotizacionRegistradaV1,
+)
+from cotizaciones.modulos.cotizaciones.infraestructura.mapeadores_eventos import (
+    comando_desde_mensaje,
+    mensaje_rechazada,
+    mensaje_registrada,
+)
+from cotizaciones.seedwork.infraestructura.ciclos import iniciar_ciclo
+from cotizaciones.seedwork.infraestructura.publicador_pulsar import PublicadorPulsar
 from cotizaciones.config.settings import Settings
 from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
 from cotizaciones.modulos.cotizaciones.aplicacion.handlers.procesar_peticion import (
@@ -38,6 +57,11 @@ assert callable(componer_procesamiento)
 assert ProcesarPeticionHandler.consumidor == "cotizaciones.procesar_peticion"
 assert callable(componer_procesamiento_sql) and callable(crear_uow_cotizaciones)
 assert callable(DespachadorOutbox)
+for record in (SolicitarCotizacionV1, CotizacionRegistradaV1, CotizacionRechazadaV1):
+    assert AvroSchema(record) is not None and "namespace" not in record.schema()
+assert callable(comando_desde_mensaje) and callable(mensaje_registrada)
+assert callable(mensaje_rechazada) and callable(ConsumidorPeticiones)
+assert callable(PublicadorPulsar) and callable(iniciar_ciclo) and callable(iniciar_despacho)
 assert {
     "cotizaciones.catalogos",
     "cotizaciones.ofertas_catalogo",

@@ -1,0 +1,58 @@
+{
+  "type": "record",
+  "name": "CotizacionRechazadaV1",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string"
+    },
+    {
+      "name": "tipo",
+      "type": "string"
+    },
+    {
+      "name": "version_contrato",
+      "type": "int"
+    },
+    {
+      "name": "instante",
+      "type": "string"
+    },
+    {
+      "name": "correlacion",
+      "type": "string"
+    },
+    {
+      "name": "causacion",
+      "type": "string"
+    },
+    {
+      "name": "id_peticion",
+      "type": "string"
+    },
+    {
+      "name": "id_trabajo",
+      "type": "string"
+    },
+    {
+      "name": "id_solicitud",
+      "type": "string"
+    },
+    {
+      "name": "id_partner",
+      "type": "string"
+    },
+    {
+      "name": "version_catalogo",
+      "type": "int"
+    },
+    {
+      "name": "version_cotizacion",
+      "type": "int"
+    },
+    {
+      "name": "motivo",
+      "type": "string"
+    }
+  ]
+}

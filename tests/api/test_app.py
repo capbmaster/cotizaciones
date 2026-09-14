@@ -10,12 +10,9 @@ from sqlalchemy.exc import OperationalError
 from cotizaciones.api.app import create_app, get_settings
 from cotizaciones.config.database import Database
 from cotizaciones.config.settings import Settings
-from cotizaciones.infraestructura.ciclo_vida import (
-    EstadoCiclo,
-    EstadoComponente,
-    EstadoMensajeria,
-)
+from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria
 from cotizaciones.seedwork.aplicacion.excepciones import ColisionPersistencia
+from cotizaciones.seedwork.infraestructura.ciclos import EstadoCiclo, EstadoComponente
 
 CON_BASE = Settings(database_url="postgresql+psycopg://prueba:prueba@db:5432/prueba")
 
@@ -109,6 +106,7 @@ def test_ready_con_base_disponible_y_mensajeria_lista_verifica_fuera_del_event_l
                 "ultimo_error": None,
                 "id_mensaje_pausa": None,
                 "motivo_pausa": None,
+                "ultimo_exito": None,
             }
         },
     }
@@ -149,12 +147,14 @@ def test_ready_informa_mensajeria_no_operativa_con_la_pausa() -> None:
                 "ultimo_error": "ComandoInvalido: categoria vacia",
                 "id_mensaje_pausa": "00000000-0000-0000-0000-000000000022",
                 "motivo_pausa": "categoria vacia",
+                "ultimo_exito": None,
             },
             "despacho-resultados": {
                 "estado": "OPERANDO",
                 "ultimo_error": None,
                 "id_mensaje_pausa": None,
                 "motivo_pausa": None,
+                "ultimo_exito": None,
             },
         },
     }
