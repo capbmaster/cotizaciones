@@ -6,7 +6,7 @@ Plan de implementación: [docs/plans/README.md](docs/plans/README.md). Evidencia
 
 ## Estado
 
-**Fases 01–06 terminadas.** Una instancia es un único proceso FastAPI que:
+**Fases 01–07 terminadas.** Una instancia es un único proceso FastAPI que:
 - consume comandos de Pulsar y hace ACK después del commit;
 - resuelve la petición y confirma en una sola transacción la cotización, la marca de inbox y la salida del outbox;
 - publica los resultados desde el outbox;
@@ -24,6 +24,13 @@ curl "http://127.0.0.1:8002/cotizaciones?id_peticion=<id_peticion>"
 ```
 
 Recepción del comando, resultado confirmado en PostgreSQL y publicación a Orquestación son tres momentos distintos: estas consultas solo ven el segundo.
+
+## Recuperación y escalamiento (E8/E4)
+
+- **Métricas y reconciliación:** `scripts/muestrear_metricas.py` (CSV con totales, latencia comando→efecto, pendientes del outbox y backlog/consumidores de Pulsar) y `scripts/reconciliar.py` (compara el JSONL de peticiones enviadas contra la base y produce `reconciliacion.json` con elegibles/propuestas/rechazos/pendientes/duplicadas).
+- **Caída y recuperación probadas** (`tests/integracion/test_recuperacion.py`): dos cohortes, la segunda enviada con el servicio detenido; al reabrir con la misma base y suscripción, ambas cohortes quedan reconciliadas sin pendientes ni duplicados.
+- **Réplicas concurrentes bajo carga** (`tests/integracion/test_concurrencia.py`): 2 y 4 instancias completas (API + consumo + despacho) sobre la misma suscripción, con 200 comandos mezclando reentregas exactas y peticiones repetidas con otro `command_id`. Ninguna cotización ni salida se duplica.
+- **Procedimientos de laboratorio:** [docs/experimentos/e8-cotizaciones.md](docs/experimentos/e8-cotizaciones.md) (Cotizaciones como servicio que falla) y [docs/experimentos/e4-cotizaciones.md](docs/experimentos/e4-cotizaciones.md) (1/2/4 instancias bajo 4× carga). Evidencia: [docs/evidencias/07-recuperacion-y-escala.md](docs/evidencias/07-recuperacion-y-escala.md).
 
 ## Entorno de desarrollo (Docker)
 
