@@ -13,7 +13,10 @@ from cotizaciones.api.app import create_app
 from cotizaciones.config.database import create_database
 from cotizaciones.config.settings import Settings
 from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
+from cotizaciones.modulos.cotizaciones.dominio.entidades import Cotizacion
+from cotizaciones.modulos.cotizaciones.dominio.servicios import resolver_oferta
 from cotizaciones.seedwork.aplicacion.excepciones import ColisionPersistencia
+from cotizaciones.seedwork.dominio.entidades import AgregacionRaiz
 
 fuente = Path(sys.argv[1]).resolve()
 paquete = Path(cotizaciones.__file__).resolve()
@@ -23,6 +26,8 @@ assert create_app(Settings()).title == "Cotizaciones"
 assert callable(create_database) and callable(procesar_mensajeria)
 assert EstadoMensajeria().listo()
 assert issubclass(ColisionPersistencia, RuntimeError)
+assert issubclass(Cotizacion, AgregacionRaiz)
+assert callable(resolver_oferta)
 print(f"Wheel instalado importado fuera del arbol fuente: {paquete}")
 """
 
