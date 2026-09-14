@@ -5,6 +5,7 @@ from cotizaciones.modulos.cotizaciones.dominio.objetos_valor import (
     DatosPeticion,
     Dinero,
     MotivoRechazo,
+    validar_duracion_opcional,
 )
 from cotizaciones.seedwork.dominio.eventos import EventoDominio
 from cotizaciones.seedwork.dominio.validaciones import validar_identidad, validar_version
@@ -33,12 +34,15 @@ class _ResolucionCotizacion(EventoDominio):
 class CotizacionRegistrada(_ResolucionCotizacion):
     id_proveedor: UUID
     precio: Dinero
+    # E3 (Paso 54): duración de la oferta elegida, copiada antes del outbox. Null = desconocida.
+    duracion_estimada_minutos: int | None = None
 
     def __post_init__(self) -> None:
         super().__post_init__()
         validar_identidad(self.id_proveedor)
         if not isinstance(self.precio, Dinero):
             raise ValueError("La propuesta requiere un precio en Dinero")
+        validar_duracion_opcional(self.duracion_estimada_minutos)
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -30,7 +30,12 @@ from cotizaciones.seedwork.infraestructura.serializacion import (
     texto,
 )
 
-VERSION_FORMATO = 1
+# version_formato es el formato interno del documento (inbox/outbox/archivo de eventos), NO el
+# version_contrato del Avro publico. CotizacionRechazada nunca cambia (E3 no la toca).
+VERSION_FORMATO_RECHAZADA = 1
+# CotizacionRegistrada pasa a 2 desde el Paso 54: incluye duracion_estimada_minutos (puede ser
+# null). El formato 1 historico (sin esa clave) se sigue leyendo: null = desconocida.
+VERSION_FORMATO_REGISTRADA = 2
 
 
 def _utc(valor: datetime) -> str:
@@ -99,14 +104,17 @@ def serializar_evento(evento: EventoDominio) -> Documento:
             id_proveedor=str(evento.id_proveedor),
             importe_menor=evento.precio.importe_menor,
             moneda=evento.precio.moneda,
+            duracion_estimada_minutos=evento.duracion_estimada_minutos,
         )
+        version_formato = VERSION_FORMATO_REGISTRADA
     elif isinstance(evento, CotizacionRechazada):
         resultado = dict(motivo=evento.motivo.value)
+        version_formato = VERSION_FORMATO_RECHAZADA
     else:
         raise ValueError(f"Evento sin serializacion: {type(evento).__name__}")
     documento: Documento = dict(
         tipo=type(evento).__name__,
-        version_formato=VERSION_FORMATO,
+        version_formato=version_formato,
         id_evento=str(evento.id_evento),
         instante=_utc(evento.instante),
         id_cotizacion=str(evento.id_cotizacion),
@@ -123,8 +131,7 @@ def serializar_evento(evento: EventoDominio) -> Documento:
 
 def decodificar_evento(documento: Documento) -> CotizacionRegistrada | CotizacionRechazada:
     try:
-        if entero(documento, "version_formato") != VERSION_FORMATO:
-            raise ValueError("Formato de evento desconocido")
+        formato = entero(documento, "version_formato")
         tipo = texto(documento, "tipo")
         comunes: dict[str, Any] = dict(
             id_evento=identidad(documento, "id_evento"),
@@ -137,6 +144,14 @@ def decodificar_evento(documento: Documento) -> CotizacionRegistrada | Cotizacio
             version_cotizacion=entero(documento, "version_cotizacion"),
         )
         if tipo == "CotizacionRegistrada":
+            if formato not in (1, VERSION_FORMATO_REGISTRADA):
+                raise ValueError("Formato de evento desconocido")
+            # Formato 1 (historico, sin la clave): duracion desconocida. Formato 2: puede ser
+            # un entero o null, nunca ausente.
+            valor_duracion = documento.get("duracion_estimada_minutos") if formato == 2 else None
+            duracion = (
+                None if valor_duracion is None else entero(documento, "duracion_estimada_minutos")
+            )
             return CotizacionRegistrada(
                 **comunes,
                 id_proveedor=identidad(documento, "id_proveedor"),
@@ -144,8 +159,11 @@ def decodificar_evento(documento: Documento) -> CotizacionRegistrada | Cotizacio
                     importe_menor=entero(documento, "importe_menor"),
                     moneda=texto(documento, "moneda"),
                 ),
+                duracion_estimada_minutos=duracion,
             )
         if tipo == "CotizacionRechazada":
+            if formato != VERSION_FORMATO_RECHAZADA:
+                raise ValueError("Formato de evento desconocido")
             return CotizacionRechazada(**comunes, motivo=MotivoRechazo(texto(documento, "motivo")))
         raise ValueError(f"Tipo de evento desconocido: {tipo}")
     except (KeyError, TypeError) as error:
@@ -153,6 +171,8 @@ def decodificar_evento(documento: Documento) -> CotizacionRegistrada | Cotizacio
 
 
 def _oferta_desde_documento(documento: Documento) -> OfertaCatalogo:
+    # duracion_estimada_minutos es opcional: el archivo v1 no trae esa clave (ver 00 §9).
+    valor_duracion = documento.get("duracion_estimada_minutos")
     return OfertaCatalogo(
         id_proveedor=identidad(documento, "id_proveedor"),
         categoria=normalizar_categoria(texto(documento, "categoria")),
@@ -160,6 +180,9 @@ def _oferta_desde_documento(documento: Documento) -> OfertaCatalogo:
         id_partner=None if documento["id_partner"] is None else identidad(documento, "id_partner"),
         precio=Dinero(
             importe_menor=entero(documento, "importe_menor"), moneda=texto(documento, "moneda")
+        ),
+        duracion_estimada_minutos=(
+            None if valor_duracion is None else entero(documento, "duracion_estimada_minutos")
         ),
     )
 
@@ -199,6 +222,7 @@ def huella_catalogo(catalogo: CatalogoVigente) -> str:
                 id_partner=str(o.id_partner) if o.id_partner is not None else None,
                 importe_menor=o.precio.importe_menor,
                 moneda=o.precio.moneda,
+                duracion_estimada_minutos=o.duracion_estimada_minutos,
             )
             for o in ordenadas
         ],

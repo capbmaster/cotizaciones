@@ -37,6 +37,7 @@ def vista_http() -> dict[str, object]:
         "version_cotizacion": 1,
         "id_comando_origen": str(VISTA.origen.id_comando),
         "resuelta_en": "2026-09-12T15:00:04Z",
+        "duracion_estimada_minutos": None,
     }
 
 

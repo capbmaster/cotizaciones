@@ -98,6 +98,7 @@ class Cotizacion(AgregacionRaiz):
                     version_cotizacion=VERSION_COTIZACION,
                     id_proveedor=resultado.oferta.id_proveedor,
                     precio=resultado.oferta.precio,
+                    duracion_estimada_minutos=resultado.oferta.duracion_estimada_minutos,
                 )
             )
         elif resultado.motivo is not None:

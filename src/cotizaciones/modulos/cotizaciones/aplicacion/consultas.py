@@ -32,6 +32,9 @@ class VistaCotizacion:
     version_cotizacion: int
     id_comando_origen: UUID
     resuelta_en: datetime
+    # E3 (Paso 56): duracion de la oferta elegida; null en propuestas del catalogo v1 o en
+    # cualquier rechazo.
+    duracion_estimada_minutos: int | None = None
 
 
 @dataclass(frozen=True, kw_only=True)

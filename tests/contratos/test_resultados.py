@@ -18,7 +18,6 @@ from cotizaciones.modulos.cotizaciones.infraestructura.esquemas.v1.eventos impor
 )
 from cotizaciones.modulos.cotizaciones.infraestructura.mapeadores_eventos import (
     mensaje_rechazada,
-    mensaje_registrada,
 )
 from cotizaciones.modulos.cotizaciones.infraestructura.serializacion import serializar_evento
 from cotizaciones.seedwork.infraestructura.serializacion import Documento
@@ -44,14 +43,15 @@ def documento_rechazo() -> Documento:
     return serializar_evento(evento)
 
 
+# El registro v1 sigue congelado (00 §5) y sus .avsc/.ejemplo.json no cambian, pero desde el
+# Paso 56 el escritor real (mensaje_registrada) publica el Record v2: su ida y vuelta con el
+# mapeador se prueba en test_resultados_rev2.py, no aqui.
+CASOS_ESQUEMA = [
+    pytest.param("cotizacion-registrada-v1", CotizacionRegistradaV1, id="registrada"),
+    pytest.param("cotizacion-rechazada-v1", CotizacionRechazadaV1, id="rechazada"),
+]
+
 CASOS = [
-    pytest.param(
-        "cotizacion-registrada-v1",
-        CotizacionRegistradaV1,
-        mensaje_registrada,
-        documento_propuesta,
-        id="registrada",
-    ),
     pytest.param(
         "cotizacion-rechazada-v1",
         CotizacionRechazadaV1,
@@ -62,17 +62,13 @@ CASOS = [
 ]
 
 
-@pytest.mark.parametrize(("nombre", "record", "mapear", "documento"), CASOS)
-def test_el_esquema_del_record_es_el_avsc_publicado(
-    nombre: str, record: Any, mapear: Callable[[Documento], Any], documento: Callable[[], Documento]
-) -> None:
+@pytest.mark.parametrize(("nombre", "record"), CASOS_ESQUEMA)
+def test_el_esquema_del_record_es_el_avsc_publicado(nombre: str, record: Any) -> None:
     assert cargar(f"{nombre}.avsc") == record.schema()
 
 
-@pytest.mark.parametrize(("nombre", "record", "mapear", "documento"), CASOS)
-def test_las_claves_del_ejemplo_son_los_campos_en_orden(
-    nombre: str, record: Any, mapear: Callable[[Documento], Any], documento: Callable[[], Documento]
-) -> None:
+@pytest.mark.parametrize(("nombre", "record"), CASOS_ESQUEMA)
+def test_las_claves_del_ejemplo_son_los_campos_en_orden(nombre: str, record: Any) -> None:
     campos = [campo["name"] for campo in cargar(f"{nombre}.avsc")["fields"]]
     assert list(cargar(f"{nombre}.ejemplo.json")) == campos
 
@@ -94,7 +90,7 @@ def test_los_checksums_publicados_coinciden_con_los_archivos() -> None:
         if linea.strip():
             esperado, archivo = linea.split(maxsplit=1)
             publicados[archivo] = esperado
-    assert set(publicados) == {
+    esperados = {
         f"{nombre}.{extension}"
         for nombre in (
             "solicitar-cotizacion-v1",
@@ -103,6 +99,13 @@ def test_los_checksums_publicados_coinciden_con_los_archivos() -> None:
         )
         for extension in ("avsc", "ejemplo.json")
     }
+    esperados |= {
+        "cotizacion-registrada-v1.rev2.avsc",
+        "cotizacion-registrada-v1.rev2.ejemplo.json",
+        "fixtures/cotizacion-registrada-v1.bin",
+        "fixtures/cotizacion-registrada-v1.rev2.bin",
+    }
+    assert set(publicados) == esperados
     for archivo, esperado in publicados.items():
         assert hashlib.sha256((CONTRATOS / archivo).read_bytes()).hexdigest() == esperado, archivo
 

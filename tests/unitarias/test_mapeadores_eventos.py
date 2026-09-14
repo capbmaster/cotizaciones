@@ -102,11 +102,12 @@ def test_un_objeto_sin_los_campos_es_comando_invalido() -> None:
         comando_desde_mensaje(object())
 
 
-def test_propuesta_a_record_v1() -> None:
+def test_propuesta_a_record_v2() -> None:
+    """Desde el Paso 56 el escritor publica el Record v2 (version_contrato=2)."""
     record = mensaje_registrada(documento())
     assert record.event_id == str(ID_EVENTO)
     assert record.tipo == "CotizacionRegistrada.v1"
-    assert record.version_contrato == 1
+    assert record.version_contrato == 2
     assert record.instante == "2026-09-12T15:00:04+00:00"
     assert record.correlacion == str(ID_SOLICITUD)
     assert record.causacion == str(ID_COMANDO)
@@ -121,6 +122,7 @@ def test_propuesta_a_record_v1() -> None:
     assert record.moneda == "COP"
     assert record.categoria == "plomeria"
     assert record.tipo_red == "GENERAL_HDA"
+    assert record.duracion_estimada_minutos is None
 
 
 def test_la_categoria_se_publica_tal_como_llego() -> None:

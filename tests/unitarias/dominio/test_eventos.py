@@ -98,3 +98,21 @@ def test_los_hechos_son_inmutables(evento: CotizacionRegistrada | CotizacionRech
     for campo in ("id_evento", "id_cotizacion", "peticion", "version_catalogo"):
         with pytest.raises(FrozenInstanceError):
             setattr(evento, campo, None)
+
+
+# --- Paso 54 (E3): duracion_estimada_minutos opcional en CotizacionRegistrada ---
+
+
+def test_registrada_sin_duracion_es_desconocida_por_defecto() -> None:
+    assert registrada().duracion_estimada_minutos is None
+
+
+@pytest.mark.parametrize("duracion", [30, 90, None])
+def test_registrada_con_duracion_valida(duracion: int | None) -> None:
+    assert registrada(duracion_estimada_minutos=duracion).duracion_estimada_minutos == duracion
+
+
+@pytest.mark.parametrize("duracion", [0, -1, True, False, 1.5])
+def test_registrada_con_duracion_invalida_falla(duracion: Any) -> None:
+    with pytest.raises(ValueError, match="duracion"):
+        registrada(duracion_estimada_minutos=duracion)

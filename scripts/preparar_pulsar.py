@@ -80,6 +80,19 @@ def aplicar_politicas(
     raise RuntimeError(f"Las politicas de {topico} no se pudieron leer de vuelta")
 
 
+def aplicar_compatibilidad(admin_url: str, topico: str, estrategia: str) -> str:
+    """Fija la estrategia de compatibilidad de esquema del topico y la lee de vuelta (Paso 57)."""
+    base = f"{admin_url.rstrip('/')}/admin/v2/{topico.replace('://', '/')}"
+    ruta = f"{base}/schemaCompatibilityStrategy"
+    _admin("PUT", ruta, estrategia)
+    for _ in range(40):
+        leida = _admin("GET", ruta).strip().strip('"')
+        if leida == estrategia:
+            return leida
+        time.sleep(0.25)
+    raise RuntimeError(f"La compatibilidad de {topico} no quedo en {estrategia!r}")
+
+
 def _suscribir(cliente: Any, topico: str, nombre: str, esquema: Any) -> None:
     # Crear una suscripción existente no reinicia su cursor.
     cliente.subscribe(
@@ -97,6 +110,13 @@ def main() -> None:
         description="Registra esquemas y crea las suscripciones durables de 00 §1 antes del envio."
     )
     parser.add_argument("--admin-url", help="Aplica cuota de backlog y retencion por topico")
+    parser.add_argument(
+        "--compatibilidad",
+        help=(
+            "Estrategia de compatibilidad de esquema del topico de propuestas "
+            "(requiere --admin-url)"
+        ),
+    )
     parser.add_argument("--historicos-e3", action="store_true", help="Crea e3-historico-01..05")
     parser.add_argument("--backlog-mib", type=int, default=50)
     parser.add_argument("--backlog-minutos", type=int, default=30)
@@ -105,6 +125,8 @@ def main() -> None:
     argumentos = parser.parse_args()
     if argumentos.retencion_mib <= argumentos.backlog_mib:
         parser.error("--retencion-mib debe superar --backlog-mib (regla del broker)")
+    if argumentos.compatibilidad and not argumentos.admin_url:
+        parser.error("--compatibilidad requiere --admin-url")
     configuracion = Settings.from_environment()
     timeout = configuracion.pulsar_timeout_segundos
     cliente = pulsar.Client(
@@ -149,6 +171,11 @@ def main() -> None:
                 argumentos.retencion_mib,
             )
             print(json.dumps(politicas, ensure_ascii=False))
+        if argumentos.compatibilidad:
+            leida = aplicar_compatibilidad(
+                argumentos.admin_url, configuracion.topico_registrada, argumentos.compatibilidad
+            )
+            print(f"Compatibilidad de {configuracion.topico_registrada}: {leida}")
 
 
 if __name__ == "__main__":

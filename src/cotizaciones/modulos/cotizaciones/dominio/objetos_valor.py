@@ -43,6 +43,12 @@ def normalizar_categoria(texto: str) -> str:
     return clave
 
 
+def validar_duracion_opcional(valor: int | None) -> None:
+    """Entero estricto > 0, o ausente (nunca 0 ni booleano). Null = desconocido (E3, 00 §4)."""
+    if valor is not None and (type(valor) is not int or valor <= 0):
+        raise ValueError("La duracion estimada debe ser un entero positivo o estar ausente")
+
+
 @dataclass(frozen=True, kw_only=True)
 class Dinero(ObjetoValor):
     importe_menor: int
@@ -110,6 +116,7 @@ class OfertaCatalogo(ObjetoValor):
     tipo_red: TipoRed
     id_partner: UUID | None
     precio: Dinero
+    duracion_estimada_minutos: int | None = None
 
     def __post_init__(self) -> None:
         try:
@@ -119,6 +126,7 @@ class OfertaCatalogo(ObjetoValor):
 
     def _validar(self) -> None:
         validar_identidad(self.id_proveedor)
+        validar_duracion_opcional(self.duracion_estimada_minutos)
         if not isinstance(self.categoria, str) or self.categoria != normalizar_categoria(
             self.categoria
         ):

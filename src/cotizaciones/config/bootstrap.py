@@ -78,6 +78,8 @@ def componer_despacho_resultados(
     )
     from cotizaciones.modulos.cotizaciones.infraestructura.esquemas.v1.eventos import (
         CotizacionRechazadaV1,
+    )
+    from cotizaciones.modulos.cotizaciones.infraestructura.esquemas.v2.eventos import (
         CotizacionRegistradaV1,
     )
     from cotizaciones.modulos.cotizaciones.infraestructura.mapeadores_eventos import (

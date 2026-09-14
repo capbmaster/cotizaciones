@@ -76,7 +76,7 @@ def test_ida_y_vuelta_exacta_de_ambos_eventos(fabrica: Any) -> None:
 def test_documento_de_la_propuesta() -> None:
     assert serializar_evento(propuesta()) == {
         "tipo": "CotizacionRegistrada",
-        "version_formato": 1,
+        "version_formato": 2,
         "id_evento": str(ID_EVENTO),
         "instante": "2026-09-12T15:00:04+00:00",
         "id_cotizacion": str(ID_COTIZACION),
@@ -88,6 +88,7 @@ def test_documento_de_la_propuesta() -> None:
         "id_proveedor": str(A101),
         "importe_menor": 15_000_000,
         "moneda": "COP",
+        "duracion_estimada_minutos": None,
     }
 
 
@@ -120,7 +121,7 @@ def test_el_instante_se_escribe_en_utc() -> None:
 @pytest.mark.parametrize(
     "cambio",
     [
-        pytest.param({"version_formato": 2}, id="formato-2-todavia-desconocido"),
+        pytest.param({"version_formato": 3}, id="formato-3-desconocido"),
         pytest.param({"version_formato": "1"}, id="formato-no-entero"),
         pytest.param({"tipo": "CotizacionDesconocida"}, id="tipo-desconocido"),
     ],
@@ -147,6 +148,25 @@ def test_serializar_valida_decodificando_de_vuelta() -> None:
 def test_serializar_rechaza_eventos_de_otro_tipo() -> None:
     with pytest.raises(ValueError):
         serializar_evento(EventoDominio(id_evento=ID_EVENTO, instante=INSTANTE_RESULTADO))
+
+
+@pytest.mark.parametrize("duracion", [30, 90, None])
+def test_ida_y_vuelta_de_la_duracion_estimada(duracion: int | None) -> None:
+    original = replace(propuesta(), duracion_estimada_minutos=duracion)
+    documento = serializar_evento(original)
+    assert documento["version_formato"] == 2
+    assert documento["duracion_estimada_minutos"] == duracion
+    assert decodificar_evento(documento) == original
+
+
+def test_un_documento_formato_1_historico_decodifica_duracion_nula() -> None:
+    """Filas v1 (sin la clave, escritas antes del Paso 54) se leen con duracion desconocida."""
+    documento = serializar_evento(propuesta())
+    documento["version_formato"] = 1
+    del documento["duracion_estimada_minutos"]
+    decodificado = decodificar_evento(documento)
+    assert isinstance(decodificado, CotizacionRegistrada)
+    assert decodificado.duracion_estimada_minutos is None
 
 
 def test_peticion_con_uuid_en_texto_y_enumeraciones_por_valor() -> None:

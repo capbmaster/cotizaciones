@@ -23,6 +23,8 @@ _RED_PARTNER = (
     "AND (tipo_red <> 'HOMOLOGADA_PARTNER' OR id_partner IS NOT NULL)"
 )
 _MOTIVO = "motivo IS NULL OR motivo IN ('SIN_OFERTA_PARA_CATEGORIA', 'SIN_PROVEEDOR_EN_RED')"
+# E3 (Paso 54): columna aditiva nullable en ofertas_catalogo y cotizaciones.
+_DURACION = "duracion_estimada_minutos IS NULL OR duracion_estimada_minutos > 0"
 _RESULTADO = (
     "(estado = 'PROPUESTA' AND id_proveedor IS NOT NULL AND importe_menor IS NOT NULL "
     "AND importe_menor > 0 AND moneda IS NOT NULL AND motivo IS NULL) "
@@ -51,6 +53,7 @@ class OfertaCatalogoSQL(BaseSQL):
         CheckConstraint("importe_menor > 0", name="ck_oferta_importe"),
         CheckConstraint("moneda ~ '^[A-Z]{3}$'", name="ck_oferta_moneda"),
         CheckConstraint(_RED_PARTNER, name="ck_oferta_red_partner"),
+        CheckConstraint(_DURACION, name="ck_oferta_duracion"),
         UniqueConstraint(
             "version_catalogo",
             "categoria",
@@ -73,6 +76,7 @@ class OfertaCatalogoSQL(BaseSQL):
     id_partner: Mapped[UUID | None]
     importe_menor: Mapped[int] = mapped_column(BigInteger)
     moneda: Mapped[str]
+    duracion_estimada_minutos: Mapped[int | None]
 
 
 class CotizacionSQL(BaseSQL):
@@ -83,6 +87,7 @@ class CotizacionSQL(BaseSQL):
         CheckConstraint("estado IN ('PROPUESTA', 'RECHAZADA')", name="ck_cotizacion_estado"),
         CheckConstraint(_MOTIVO, name="ck_cotizacion_motivo"),
         CheckConstraint(_RESULTADO, name="ck_cotizacion_resultado"),
+        CheckConstraint(_DURACION, name="ck_cotizacion_duracion"),
         Index("ix_cotizacion_trabajo", "id_trabajo"),
         Index("ix_cotizacion_resuelta", "resuelta_en", "id"),
         {"schema": "cotizaciones"},
@@ -106,6 +111,7 @@ class CotizacionSQL(BaseSQL):
     importe_menor: Mapped[int | None] = mapped_column(BigInteger)
     moneda: Mapped[str | None]
     motivo: Mapped[str | None]
+    duracion_estimada_minutos: Mapped[int | None]
     resuelta_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     registrada_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

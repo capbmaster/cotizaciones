@@ -47,6 +47,7 @@ def valores_cotizacion(cotizacion: Cotizacion) -> dict[str, Any]:
         importe_menor=oferta.precio.importe_menor if oferta is not None else None,
         moneda=oferta.precio.moneda if oferta is not None else None,
         motivo=motivo.value if motivo is not None else None,
+        duracion_estimada_minutos=oferta.duracion_estimada_minutos if oferta is not None else None,
         resuelta_en=cotizacion.resuelta_en,
     )
 
@@ -67,6 +68,7 @@ def cargar_cotizacion(fila: CotizacionSQL) -> Cotizacion:
                     peticion.id_partner if peticion.tipo_red is TipoRed.HOMOLOGADA_PARTNER else None
                 ),
                 precio=Dinero(importe_menor=fila.importe_menor, moneda=fila.moneda),
+                duracion_estimada_minutos=fila.duracion_estimada_minutos,
             ),
         )
     else:
@@ -99,6 +101,7 @@ def valores_oferta(version: int, oferta: OfertaCatalogo) -> dict[str, Any]:
         id_partner=oferta.id_partner,
         importe_menor=oferta.precio.importe_menor,
         moneda=oferta.precio.moneda,
+        duracion_estimada_minutos=oferta.duracion_estimada_minutos,
     )
 
 
@@ -114,6 +117,7 @@ def cargar_catalogo(fila: CatalogoSQL, ofertas: Sequence[OfertaCatalogoSQL]) -> 
                     tipo_red=TipoRed(oferta.tipo_red),
                     id_partner=oferta.id_partner,
                     precio=Dinero(importe_menor=oferta.importe_menor, moneda=oferta.moneda),
+                    duracion_estimada_minutos=oferta.duracion_estimada_minutos,
                 )
                 for oferta in ofertas
             ),

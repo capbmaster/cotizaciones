@@ -112,3 +112,37 @@ def test_ofertas_de_categoria_filtra_por_clave_exacta() -> None:
     assert [o.id_proveedor for o in catalogo.ofertas_de_categoria("electricidad")] == [A201]
     assert catalogo.ofertas_de_categoria("Plomeria") == ()
     assert catalogo.ofertas_de_categoria("jardineria") == ()
+
+
+# --- Paso 54 (E3): duracion_estimada_minutos opcional en la oferta ---
+
+
+@pytest.mark.parametrize("duracion", [30, 90, None])
+def test_oferta_con_duracion_valida(duracion: int | None) -> None:
+    a101 = oferta(A101, "plomeria", TipoRed.GENERAL_HDA, None, 15_000_000)
+    con_duracion = OfertaCatalogo(
+        id_proveedor=a101.id_proveedor,
+        categoria=a101.categoria,
+        tipo_red=a101.tipo_red,
+        id_partner=a101.id_partner,
+        precio=a101.precio,
+        duracion_estimada_minutos=duracion,
+    )
+    assert con_duracion.duracion_estimada_minutos == duracion
+
+
+@pytest.mark.parametrize("duracion", [0, -1, True, False, 1.5])
+def test_oferta_con_duracion_invalida_falla(duracion: Any) -> None:
+    with pytest.raises(CatalogoInvalido, match="duracion"):
+        OfertaCatalogo(
+            id_proveedor=A101,
+            categoria="plomeria",
+            tipo_red=TipoRed.GENERAL_HDA,
+            id_partner=None,
+            precio=oferta(A101, "plomeria", TipoRed.GENERAL_HDA, None, 1).precio,
+            duracion_estimada_minutos=duracion,
+        )
+
+
+def test_oferta_sin_duracion_es_desconocida_por_defecto() -> None:
+    assert oferta(A101, "plomeria", TipoRed.GENERAL_HDA, None, 1).duracion_estimada_minutos is None

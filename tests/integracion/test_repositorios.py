@@ -166,3 +166,65 @@ def test_el_id_de_cada_oferta_es_determinista(base: Database, catalogo_v1: Catal
     primera = catalogo_v1.ofertas[0]
     assert id_oferta(1, primera) == id_oferta(1, primera)
     assert id_oferta(2, primera) != id_oferta(1, primera)
+
+
+# --- Paso 54 (E3): duracion_estimada_minutos persiste en la fila y en el catalogo ---
+
+
+@pytest.mark.parametrize("duracion", [30, 90, None])
+def test_ida_y_vuelta_de_la_duracion_estimada_en_la_cotizacion(
+    base: Database, catalogo_v1: CatalogoVigente, duracion: int | None
+) -> None:
+    original = cotizacion_resuelta()
+    oferta_elegida = original.resultado.oferta
+    assert oferta_elegida is not None
+    original = replace(
+        original,
+        resultado=ResultadoCotizacion(
+            estado=EstadoCotizacion.PROPUESTA,
+            oferta=replace(oferta_elegida, duracion_estimada_minutos=duracion),
+        ),
+    )
+    guardar(base, original)
+    recuperada = recuperar(base, original.peticion.id_peticion)
+    assert recuperada is not None and recuperada.resultado.oferta is not None
+    assert recuperada.resultado.oferta.duracion_estimada_minutos == duracion
+    with base.engine.connect() as conexion:
+        valor = conexion.scalar(
+            text("SELECT duracion_estimada_minutos FROM cotizaciones.cotizaciones")
+        )
+    assert valor == duracion
+
+
+def test_fila_previa_a_la_migracion_se_lee_con_duracion_nula(
+    base: Database, catalogo_v1: CatalogoVigente
+) -> None:
+    """Una fila insertada sin la columna (como quedan las v1 tras el ALTER) lee duracion None."""
+    guardar(base, cotizacion_resuelta())
+    with base.engine.begin() as conexion:
+        conexion.execute(
+            text(
+                "UPDATE cotizaciones.cotizaciones SET duracion_estimada_minutos = NULL "
+                "WHERE id_peticion = :id_peticion"
+            ),
+            {"id_peticion": str(cotizacion_resuelta().peticion.id_peticion)},
+        )
+    recuperada = recuperar(base, cotizacion_resuelta().peticion.id_peticion)
+    assert recuperada is not None and recuperada.resultado.oferta is not None
+    assert recuperada.resultado.oferta.duracion_estimada_minutos is None
+
+
+def test_ida_y_vuelta_de_la_duracion_en_el_catalogo(base: Database) -> None:
+    catalogo_con_duracion = CatalogoVigente(
+        version=2,
+        ofertas=(
+            replace(
+                oferta(A101, "plomeria", TipoRed.GENERAL_HDA, None, 1), duracion_estimada_minutos=30
+            ),
+        ),
+    )
+    registrar_catalogo(base, catalogo_con_duracion)
+    with crear_uow_cotizaciones(base) as unidad:
+        vigente = unidad.catalogos.obtener_vigente()
+    assert vigente is not None
+    assert vigente.ofertas[0].duracion_estimada_minutos == 30

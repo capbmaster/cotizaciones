@@ -394,6 +394,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Resuelta En"
+          },
+          "duracion_estimada_minutos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duracion Estimada Minutos"
           }
         },
         "type": "object",

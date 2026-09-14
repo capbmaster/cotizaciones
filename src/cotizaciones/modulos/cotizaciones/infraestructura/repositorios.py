@@ -128,6 +128,7 @@ def _vista_desde_fila(fila: CotizacionSQL) -> VistaCotizacion:
         version_cotizacion=fila.version_cotizacion,
         id_comando_origen=fila.id_comando_origen,
         resuelta_en=fila.resuelta_en,
+        duracion_estimada_minutos=fila.duracion_estimada_minutos,
     )
 
 

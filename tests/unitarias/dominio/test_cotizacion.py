@@ -235,3 +235,44 @@ def test_tipos_invalidos_fallan() -> None:
         construir(
             resultado=replace(propuesta(oferta(A101, "plomeria", GENERAL, None, 1)), oferta=None)
         )
+
+
+# --- Paso 54 (E3): la duracion de la oferta elegida queda copiada en el evento ---
+
+
+def test_resolver_copia_la_duracion_de_la_oferta_elegida() -> None:
+    from cotizaciones.modulos.cotizaciones.dominio.objetos_valor import CatalogoVigente
+
+    catalogo_con_duracion = CatalogoVigente(
+        version=1,
+        ofertas=(
+            OfertaCatalogo(
+                id_proveedor=A101,
+                categoria="plomeria",
+                tipo_red=GENERAL,
+                id_partner=None,
+                precio=oferta(A101, "plomeria", GENERAL, None, 1).precio,
+                duracion_estimada_minutos=45,
+            ),
+        ),
+    )
+    cotizacion = Cotizacion.resolver(
+        id=ID_COTIZACION,
+        peticion=datos_peticion(),
+        origen=origen_comando(),
+        catalogo=catalogo_con_duracion,
+        id_evento=ID_EVENTO,
+        instante=INSTANTE_RESULTADO,
+    )
+    assert cotizacion.resultado.oferta is not None
+    assert cotizacion.resultado.oferta.duracion_estimada_minutos == 45
+    (evento,) = cotizacion.eventos_pendientes
+    assert isinstance(evento, CotizacionRegistrada)
+    assert evento.duracion_estimada_minutos == 45
+
+
+def test_resolver_sin_duracion_en_el_catalogo_deja_el_evento_con_duracion_nula() -> None:
+    cotizacion = resolver()
+    (evento,) = cotizacion.eventos_pendientes
+    assert isinstance(evento, CotizacionRegistrada)
+    assert evento.duracion_estimada_minutos is None

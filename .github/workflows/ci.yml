@@ -89,4 +89,49 @@ jobs:
           exit 1
 
       - name: Pruebas de integracion con PostgreSQL y Pulsar
-        run: uv run --locked pytest tests/integracion -q --tb=short
+        run: >-
+          uv run --locked pytest tests/integracion
+          --ignore=tests/integracion/test_compatibilidad_broker.py -q --tb=short
+
+  compatibilidad:
+    runs-on: ubuntu-24.04
+    env:
+      COTIZACIONES_TEST_PULSAR_URL: pulsar://127.0.0.1:6650
+      COTIZACIONES_TEST_PULSAR_ADMIN_URL: http://127.0.0.1:8080
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Iniciar Pulsar 4.1.3 standalone
+        run: >-
+          docker run -d --name pulsar -p 6650:6650 -p 8080:8080
+          -e PULSAR_MEM="-Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m"
+          apachepulsar/pulsar:4.1.3 bin/pulsar standalone --advertised-address 127.0.0.1
+
+      - name: Instalar uv 0.10.9
+        run: |
+          curl -LsSf https://astral.sh/uv/0.10.9/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Instalar Python de .python-version
+        run: uv python install
+
+      - name: Sincronizar dependencias
+        run: uv sync --locked
+
+      - name: Esperar a Pulsar
+        run: |
+          for intento in $(seq 1 60); do
+            if docker exec pulsar bin/pulsar-admin brokers healthcheck > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker logs pulsar | tail -50
+          exit 1
+
+      # 00 §9 (Paso 57): solo las pruebas de compatibilidad de esquema, objetivo < 60 s.
+      - name: Pruebas de compatibilidad de esquema (sin red y contra el broker)
+        run: >-
+          time uv run --locked pytest
+          tests/contratos/test_compatibilidad.py tests/integracion/test_compatibilidad_broker.py
+          -q --tb=short
