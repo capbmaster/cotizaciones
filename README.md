@@ -135,6 +135,81 @@ docker compose exec -e COTIZACIONES_PULSAR_URL=pulsar://pulsar:6650 dev uv run -
 - **Despacho:** publica desde el outbox con reservas.
 - **Al cerrar:** detiene ambos hilos en menos de 10 s, sin ACK ni marcas del outbox y sin anular suscripciones.
 
+## Integración con los otros servicios
+
+Hoy no existe integración real: Orquestación y Seguimiento no están implementados todavía como
+código en el curso, así que todo lo que sigue se ejercita con los dobles de laboratorio
+(`scripts/enviar_peticion.py`, `scripts/consumir_resultados.py`). Esta sección describe **cómo
+debe hacerse** la integración real cuando esos servicios existan, para que cada equipo la
+implemente contra el mismo contrato que ya usan las pruebas de Cotizaciones.
+
+### Contrato, no código
+
+Ningún servicio importa clases, tablas ni el paquete Python de Cotizaciones. La única superficie
+de integración son los tres tópicos de Pulsar y sus esquemas Avro publicados en
+[docs/contratos/](docs/contratos/README.md):
+
+| Tópico | Contrato | Quién lo consume/produce |
+|---|---|---|
+| `solicitar-cotizacion-v1` | `SolicitarCotizacion.v1` | **Orquestación publica**; Cotizaciones consume con la suscripción `cotizaciones-peticiones-v1` |
+| `cotizacion-registrada-v1` | `CotizacionRegistrada.v1` | Cotizaciones publica; Orquestación y Seguimiento consumen, cada uno con su propia suscripción |
+| `cotizacion-rechazada-v1` | `CotizacionRechazada.v1` | Cotizaciones publica; Orquestación y Seguimiento consumen, cada uno con su propia suscripción |
+
+Cada lector/escritor debe adoptar el `.avsc` **idéntico** (mismo nombre de record, sin namespace,
+mismos campos en el mismo orden y tipo): un nombre u orden distinto produce un esquema
+incompatible en el tópico y el broker lo rechaza. Los checksums en
+[docs/contratos/CHECKSUMS.sha256](docs/contratos/CHECKSUMS.sha256) permiten verificar que el
+archivo no cambió.
+
+### Qué debe hacer Orquestación
+
+1. Adoptar `docs/contratos/solicitar-cotizacion-v1.avsc` **tal cual** para publicar
+   `SolicitarCotizacion.v1` — hoy esa copia es una propuesta lectora de Cotizaciones, no el
+   contrato definitivo de Orquestación, pero el esquema no puede diferir.
+2. Publicar en `persistent://public/default/solicitar-cotizacion-v1`, con `command_id` y `tipo`
+   como propiedades del mensaje y `id_trabajo` como clave de partición (reglas completas y qué
+   hace Cotizaciones ante cada caso inválido en [docs/contratos/README.md](docs/contratos/README.md)).
+3. Suscribirse a `cotizacion-registrada-v1` con la suscripción `orquestacion-cotizacion-registrada-v1`
+   y a `cotizacion-rechazada-v1` con `orquestacion-cotizacion-rechazada-v1` — ambas ya las crea
+   `scripts/preparar_pulsar.py` (tipo Shared, cursor desde `Earliest`), así que Orquestación solo
+   necesita apuntar su cliente Pulsar a esos nombres, no crearlos.
+4. Aceptar `version_contrato` de `CotizacionRegistrada.v1` en **1 o 2**, sin exigir igualdad
+   estricta: desde E3 (Fase 08) el escritor real emite la revisión 2, que añade
+   `duracion_estimada_minutos` opcional (`null` si se desconoce) al final del record, con el mismo
+   `tipo` (`CotizacionRegistrada.v1`) — ver
+   [docs/evidencias/08-evolucion-e3.md](docs/evidencias/08-evolucion-e3.md).
+5. Nunca invocar la API HTTP de Cotizaciones para completar el flujo: `GET /cotizaciones/*` es
+   solo de consulta/depuración, nunca el mecanismo de integración.
+
+### Qué debe hacer Seguimiento
+
+1. Suscribirse a `cotizacion-registrada-v1` con `seguimiento-cotizacion-registrada` y a
+   `cotizacion-rechazada-v1` con `seguimiento-cotizacion-rechazada-v1` (mismo criterio que
+   Orquestación: las crea `scripts/preparar_pulsar.py`).
+2. Leer `CotizacionRegistrada.v1` con un esquema que tolere el campo adicional
+   `duracion_estimada_minutos` (`["null", "int"]`, `default: null`) — es el lector real de E3; los
+   IDs de referencia F8 y el detalle de los seis brazos del experimento están en
+   [docs/experimentos/e3-cotizaciones.md](docs/experimentos/e3-cotizaciones.md).
+3. Deduplicar por `event_id` antes de dar por completado un hecho: la entrega es al menos una vez,
+   y un reintento reenvía el mismo `event_id`, contenido e instante.
+
+### Cómo probar la integración real (cuando exista)
+
+1. Preparar esquemas y suscripciones una sola vez, antes de cualquier tráfico:
+   `docker compose exec dev uv run --locked python scripts/preparar_pulsar.py --admin-url
+   http://pulsar:8080` (o el equivalente contra el broker real que use el equipo).
+2. Apuntar el cliente Pulsar del otro servicio al mismo broker (`COTIZACIONES_PULSAR_URL` en este
+   servicio; la variable equivalente del otro) y a los tópicos de la tabla de arriba — nunca a un
+   tópico con otro nombre o en otro tenant/namespace.
+3. Sustituir gradualmente los dobles: primero validar que el otro servicio consume/produce contra
+   Pulsar real usando `scripts/consumir_resultados.py` o `scripts/enviar_peticion.py` como
+   referencia de comparación, y solo después retirar el doble correspondiente.
+4. Verificar con `scripts/smoke_despliegue.py` (Paso 62) que el resultado observado por HTTP
+   coincide con lo publicado por Pulsar, y con `scripts/muestrear_metricas.py` que la suscripción
+   real del otro servicio no acumula backlog.
+5. El runbook de despliegue en la nube, incluida la salida de red hacia el clúster Pulsar
+   compartido, está en [docs/despliegue/cloud-run.md](docs/despliegue/cloud-run.md).
+
 ## Arranque sin base (solo salud)
 
 ```bash
