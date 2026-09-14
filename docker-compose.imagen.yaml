@@ -1,0 +1,90 @@
+# Laboratorio de la imagen (Pasos 60-61, adelantados en el Paso 53 para congelar v1).
+# Red aislada: el Pulsar del docker-compose.yaml de desarrollo anuncia "pulsar", pero eso ya
+# es alcanzable aqui tambien; se usa un stack completo e independiente para no mezclar datos
+# con el entorno de desarrollo y para poder repetir la corrida desde cero.
+name: cotizaciones-imagen
+
+services:
+  postgres:
+    image: postgres:17.6
+    environment:
+      POSTGRES_USER: cotizaciones
+      POSTGRES_PASSWORD: cotizaciones_local
+      POSTGRES_DB: cotizaciones
+    volumes:
+      - cotizaciones_imagen_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cotizaciones -d cotizaciones"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  pulsar:
+    image: apachepulsar/pulsar:4.1.3
+    command: ["bin/pulsar", "standalone", "--advertised-address", "pulsar"]
+    environment:
+      PULSAR_MEM: "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m"
+    volumes:
+      - cotizaciones_imagen_pulsar:/pulsar/data
+    healthcheck:
+      test: ["CMD", "bin/pulsar-admin", "brokers", "healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  # Migra, carga y activa el catalogo v1, y prepara Pulsar. Usa la MISMA imagen que el
+  # servicio: nunca se migra al arrancar cada replica.
+  preparacion:
+    image: cotizaciones:v1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pulsar:
+        condition: service_healthy
+    environment:
+      COTIZACIONES_DATABASE_URL: postgresql+psycopg://cotizaciones:cotizaciones_local@postgres:5432/cotizaciones
+      COTIZACIONES_PULSAR_URL: pulsar://pulsar:6650
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        /opt/venv/bin/python -m alembic upgrade head &&
+        /opt/venv/bin/python scripts/cargar_catalogo.py --activar &&
+        /opt/venv/bin/python scripts/preparar_pulsar.py --admin-url http://pulsar:8080
+
+  cotizaciones:
+    image: cotizaciones:v1
+    depends_on:
+      preparacion:
+        condition: service_completed_successfully
+    environment:
+      COTIZACIONES_DATABASE_URL: postgresql+psycopg://cotizaciones:cotizaciones_local@postgres:5432/cotizaciones
+      COTIZACIONES_PULSAR_URL: pulsar://pulsar:6650
+      PORT: "8002"
+    ports:
+      - "127.0.0.1:18002:8002"
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health/live', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  smoke:
+    image: cotizaciones:v1
+    depends_on:
+      cotizaciones:
+        condition: service_healthy
+    environment:
+      COTIZACIONES_PULSAR_URL: pulsar://pulsar:6650
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        /opt/venv/bin/python scripts/smoke_despliegue.py
+        --api-url http://cotizaciones:8002
+        --pulsar-url pulsar://pulsar:6650
+
+volumes:
+  cotizaciones_imagen_postgres:
+  cotizaciones_imagen_pulsar:
