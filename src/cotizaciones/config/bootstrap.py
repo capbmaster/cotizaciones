@@ -15,6 +15,10 @@ from cotizaciones.seedwork.infraestructura.reloj import RelojActual
 if TYPE_CHECKING:
     from cotizaciones.config.database import Database
     from cotizaciones.config.settings import Settings
+    from cotizaciones.modulos.cotizaciones.aplicacion.handlers.consultar_cotizaciones import (
+        ConsultarCotizacionHandler,
+        ListarCotizacionesHandler,
+    )
     from cotizaciones.modulos.cotizaciones.infraestructura.consumidor_peticiones import (
         ConsumidorPeticiones,
     )
@@ -111,3 +115,25 @@ def componer_despacho_resultados(
         f"cotizaciones-{uuid4()}",
     )
     return despachador, publicador.cerrar
+
+
+def componer_consulta(base: "Database") -> "ConsultarCotizacionHandler":
+    from cotizaciones.modulos.cotizaciones.aplicacion.handlers.consultar_cotizaciones import (
+        ConsultarCotizacionHandler,
+    )
+    from cotizaciones.modulos.cotizaciones.infraestructura.repositorios import (
+        RepositorioLecturaCotizacionesSQL,
+    )
+
+    return ConsultarCotizacionHandler(RepositorioLecturaCotizacionesSQL(base.session_factory))
+
+
+def componer_listado(base: "Database") -> "ListarCotizacionesHandler":
+    from cotizaciones.modulos.cotizaciones.aplicacion.handlers.consultar_cotizaciones import (
+        ListarCotizacionesHandler,
+    )
+    from cotizaciones.modulos.cotizaciones.infraestructura.repositorios import (
+        RepositorioLecturaCotizacionesSQL,
+    )
+
+    return ListarCotizacionesHandler(RepositorioLecturaCotizacionesSQL(base.session_factory))

@@ -1,13 +1,22 @@
+from collections.abc import Callable
 from uuid import UUID, uuid5
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from cotizaciones.modulos.cotizaciones.aplicacion.consultas import (
+    FiltroCotizaciones,
+    VistaCotizacion,
+)
 from cotizaciones.modulos.cotizaciones.dominio.entidades import Cotizacion
 from cotizaciones.modulos.cotizaciones.dominio.excepciones import CatalogoInvalido
 from cotizaciones.modulos.cotizaciones.dominio.objetos_valor import (
     CatalogoVigente,
+    EstadoCotizacion,
+    MotivoRechazo,
     OfertaCatalogo,
+    TipoRed,
+    TipoSolicitud,
 )
 from cotizaciones.modulos.cotizaciones.infraestructura.mapeadores import (
     cargar_catalogo,
@@ -97,3 +106,57 @@ class RepositorioCatalogoSQL:
         )
         objetivo.activo = True
         self.sesion.flush()
+
+
+def _vista_desde_fila(fila: CotizacionSQL) -> VistaCotizacion:
+    peticion = fila.peticion
+    return VistaCotizacion(
+        id_cotizacion=fila.id,
+        id_peticion=fila.id_peticion,
+        id_trabajo=fila.id_trabajo,
+        id_solicitud=fila.id_solicitud,
+        id_partner=fila.id_partner,
+        categoria=peticion["categoria"],
+        tipo_solicitud=TipoSolicitud(peticion["tipo_solicitud"]),
+        tipo_red=TipoRed(peticion["tipo_red"]),
+        estado=EstadoCotizacion(fila.estado),
+        id_proveedor=fila.id_proveedor,
+        importe_menor=fila.importe_menor,
+        moneda=fila.moneda,
+        motivo=MotivoRechazo(fila.motivo) if fila.motivo is not None else None,
+        version_catalogo=fila.version_catalogo,
+        version_cotizacion=fila.version_cotizacion,
+        id_comando_origen=fila.id_comando_origen,
+        resuelta_en=fila.resuelta_en,
+    )
+
+
+class RepositorioLecturaCotizacionesSQL:
+    """Selecciona columnas directamente hacia VistaCotizacion, sin reconstruir el agregado."""
+
+    def __init__(self, crear_sesion: Callable[[], Session]) -> None:
+        self.crear_sesion = crear_sesion
+
+    def obtener(self, id_cotizacion: UUID) -> VistaCotizacion | None:
+        with self.crear_sesion() as sesion:
+            fila = sesion.get(CotizacionSQL, id_cotizacion)
+            return _vista_desde_fila(fila) if fila is not None else None
+
+    def listar(
+        self, filtro: FiltroCotizaciones, limite: int, desplazamiento: int
+    ) -> list[VistaCotizacion]:
+        consulta = select(CotizacionSQL)
+        if filtro.id_peticion is not None:
+            consulta = consulta.where(CotizacionSQL.id_peticion == filtro.id_peticion)
+        if filtro.id_trabajo is not None:
+            consulta = consulta.where(CotizacionSQL.id_trabajo == filtro.id_trabajo)
+        if filtro.estado is not None:
+            consulta = consulta.where(CotizacionSQL.estado == filtro.estado.value)
+        consulta = (
+            consulta.order_by(CotizacionSQL.resuelta_en, CotizacionSQL.id)
+            .limit(limite)
+            .offset(desplazamiento)
+        )
+        with self.crear_sesion() as sesion:
+            filas = sesion.scalars(consulta)
+            return [_vista_desde_fila(fila) for fila in filas]

@@ -35,6 +35,10 @@ from cotizaciones.seedwork.infraestructura.ciclos import iniciar_ciclo
 from cotizaciones.seedwork.infraestructura.publicador_pulsar import PublicadorPulsar
 from cotizaciones.config.settings import Settings
 from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
+from cotizaciones.modulos.cotizaciones.aplicacion.handlers.consultar_cotizaciones import (
+    ConsultarCotizacionHandler,
+    ListarCotizacionesHandler,
+)
 from cotizaciones.modulos.cotizaciones.aplicacion.handlers.procesar_peticion import (
     ProcesarPeticionHandler,
 )
@@ -62,6 +66,8 @@ for record in (SolicitarCotizacionV1, CotizacionRegistradaV1, CotizacionRechazad
 assert callable(comando_desde_mensaje) and callable(mensaje_registrada)
 assert callable(mensaje_rechazada) and callable(ConsumidorPeticiones)
 assert callable(PublicadorPulsar) and callable(iniciar_ciclo) and callable(iniciar_despacho)
+assert callable(ConsultarCotizacionHandler) and callable(ListarCotizacionesHandler)
+assert "/cotizaciones/{id_cotizacion}" in create_app(Settings()).openapi()["paths"]
 assert {
     "cotizaciones.catalogos",
     "cotizaciones.ofertas_catalogo",

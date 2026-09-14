@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
+from cotizaciones.api.cotizaciones import router as router_cotizaciones
 from cotizaciones.config.database import Database, create_database
 from cotizaciones.config.settings import Settings
 from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
@@ -61,6 +62,7 @@ def create_app(
                 database.close()
 
     application = FastAPI(title="Cotizaciones", lifespan=lifespan)
+    application.include_router(router_cotizaciones)
 
     async def fallo_persistencia(request: Request, error: Exception) -> JSONResponse:
         return JSONResponse(

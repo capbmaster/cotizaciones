@@ -26,6 +26,9 @@ MODULOS_SIN_MENSAJERIA = (
     "cotizaciones.seedwork.infraestructura.publicador_pulsar",
     "cotizaciones.infraestructura.ciclo_vida",
     "cotizaciones.infraestructura.despacho",
+    "cotizaciones.modulos.cotizaciones.aplicacion.consultas",
+    "cotizaciones.modulos.cotizaciones.aplicacion.handlers.consultar_cotizaciones",
+    "cotizaciones.api.cotizaciones",
 )
 PROHIBIDOS = ("pulsar", "solicitudes_partner")
 

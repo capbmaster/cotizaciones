@@ -1,0 +1,424 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cotizaciones",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/cotizaciones/{id_cotizacion}": {
+      "get": {
+        "tags": [
+          "cotizaciones"
+        ],
+        "summary": "Consultar Cotizacion",
+        "operationId": "consultar_cotizacion_cotizaciones__id_cotizacion__get",
+        "parameters": [
+          {
+            "name": "id_cotizacion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id Cotizacion"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VistaCotizacion"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No hay una resolucion confirmada con ese ID"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cotizaciones": {
+      "get": {
+        "tags": [
+          "cotizaciones"
+        ],
+        "summary": "Listar Cotizaciones",
+        "operationId": "listar_cotizaciones_cotizaciones_get",
+        "parameters": [
+          {
+            "name": "id_peticion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id Peticion"
+            }
+          },
+          {
+            "name": "id_trabajo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id Trabajo"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EstadoCotizacion"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limite"
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Desplazamiento"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VistaCotizacion"
+                  },
+                  "title": "Response Listar Cotizaciones Cotizaciones Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness",
+        "operationId": "liveness_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Liveness Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness",
+        "operationId": "readiness_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EstadoCotizacion": {
+        "type": "string",
+        "enum": [
+          "PROPUESTA",
+          "RECHAZADA"
+        ],
+        "title": "EstadoCotizacion"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MotivoRechazo": {
+        "type": "string",
+        "enum": [
+          "SIN_OFERTA_PARA_CATEGORIA",
+          "SIN_PROVEEDOR_EN_RED"
+        ],
+        "title": "MotivoRechazo"
+      },
+      "TipoRed": {
+        "type": "string",
+        "enum": [
+          "GENERAL_HDA",
+          "HOMOLOGADA_PARTNER"
+        ],
+        "title": "TipoRed"
+      },
+      "TipoSolicitud": {
+        "type": "string",
+        "enum": [
+          "SINIESTRO",
+          "INSTALACION"
+        ],
+        "title": "TipoSolicitud"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VistaCotizacion": {
+        "properties": {
+          "id_cotizacion": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id Cotizacion"
+          },
+          "id_peticion": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id Peticion"
+          },
+          "id_trabajo": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id Trabajo"
+          },
+          "id_solicitud": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id Solicitud"
+          },
+          "id_partner": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id Partner"
+          },
+          "categoria": {
+            "type": "string",
+            "title": "Categoria"
+          },
+          "tipo_solicitud": {
+            "$ref": "#/components/schemas/TipoSolicitud"
+          },
+          "tipo_red": {
+            "$ref": "#/components/schemas/TipoRed"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoCotizacion"
+          },
+          "id_proveedor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Proveedor"
+          },
+          "importe_menor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Importe Menor"
+          },
+          "moneda": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moneda"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MotivoRechazo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version_catalogo": {
+            "type": "integer",
+            "title": "Version Catalogo"
+          },
+          "version_cotizacion": {
+            "type": "integer",
+            "title": "Version Cotizacion"
+          },
+          "id_comando_origen": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id Comando Origen"
+          },
+          "resuelta_en": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Resuelta En"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_cotizacion",
+          "id_peticion",
+          "id_trabajo",
+          "id_solicitud",
+          "id_partner",
+          "categoria",
+          "tipo_solicitud",
+          "tipo_red",
+          "estado",
+          "id_proveedor",
+          "importe_menor",
+          "moneda",
+          "motivo",
+          "version_catalogo",
+          "version_cotizacion",
+          "id_comando_origen",
+          "resuelta_en"
+        ],
+        "title": "VistaCotizacion",
+        "description": "DTO de lectura, nunca el agregado: serializable directamente por FastAPI."
+      }
+    }
+  }
+}

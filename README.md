@@ -6,13 +6,24 @@ Plan de implementación: [docs/plans/README.md](docs/plans/README.md). Evidencia
 
 ## Estado
 
-**Fases 01–05 terminadas.** Una instancia es un único proceso FastAPI que:
+**Fases 01–06 terminadas.** Una instancia es un único proceso FastAPI que:
 - consume comandos de Pulsar y hace ACK después del commit;
 - resuelve la petición y confirma en una sola transacción la cotización, la marca de inbox y la salida del outbox;
 - publica los resultados desde el outbox;
-- atiende HTTP, con el estado de la mensajería visible en `/health/ready`.
+- atiende HTTP: `/health/live`, `/health/ready` y consultas de sus propias cotizaciones.
 
-Las consultas HTTP de cotizaciones llegan en la fase 06. La integración con Orquestación real sigue pendiente: hoy se usa el doble etiquetado.
+La integración con Orquestación real sigue pendiente: hoy se usa el doble etiquetado.
+
+## Consultas
+
+`GET /cotizaciones/{id_cotizacion}` y `GET /cotizaciones?id_peticion=…&id_trabajo=…&estado=…&limite=…&desplazamiento=…`. Contrato completo: [docs/contratos/consultas.md](docs/contratos/consultas.md) y [openapi.json](docs/contratos/openapi.json).
+
+```bash
+curl http://127.0.0.1:8002/cotizaciones/<id_cotizacion>
+curl "http://127.0.0.1:8002/cotizaciones?id_peticion=<id_peticion>"
+```
+
+Recepción del comando, resultado confirmado en PostgreSQL y publicación a Orquestación son tres momentos distintos: estas consultas solo ven el segundo.
 
 ## Entorno de desarrollo (Docker)
 
