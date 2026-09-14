@@ -1,6 +1,7 @@
 {
   "type": "record",
   "name": "SolicitarCotizacionV1",
+  "namespace": "orquestacion.eventos",
   "fields": [
     {
       "name": "command_id",
@@ -8,10 +9,12 @@
     },
     {
       "name": "tipo",
+      "default": "SolicitarCotizacion.v1",
       "type": "string"
     },
     {
       "name": "version_contrato",
+      "default": 1,
       "type": "int"
     },
     {

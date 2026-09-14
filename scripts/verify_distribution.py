@@ -62,7 +62,10 @@ assert ProcesarPeticionHandler.consumidor == "cotizaciones.procesar_peticion"
 assert callable(componer_procesamiento_sql) and callable(crear_uow_cotizaciones)
 assert callable(DespachadorOutbox)
 for record in (SolicitarCotizacionV1, CotizacionRegistradaV1, CotizacionRechazadaV1):
-    assert AvroSchema(record) is not None and "namespace" not in record.schema()
+    assert AvroSchema(record) is not None
+    assert record.schema().get("namespace") == (
+        "orquestacion.eventos" if record is SolicitarCotizacionV1 else None
+    )
 assert callable(comando_desde_mensaje) and callable(mensaje_registrada)
 assert callable(mensaje_rechazada) and callable(ConsumidorPeticiones)
 assert callable(PublicadorPulsar) and callable(iniciar_ciclo) and callable(iniciar_despacho)

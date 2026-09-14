@@ -2,11 +2,11 @@ from pulsar.schema import Integer, Record, String
 
 
 class SolicitarCotizacionV1(Record):
-    """Lector provisional de SolicitarCotizacion.v1 (propietario: Orquestación; ver 00 §3)."""
+    _avro_namespace = "orquestacion.eventos"
 
     command_id = String(required=True)
-    tipo = String(required=True)
-    version_contrato = Integer(required=True)
+    tipo = String(default="SolicitarCotizacion.v1", required=True, required_default=True)
+    version_contrato = Integer(default=1, required=True, required_default=True)
     instante = String(required=True)
     correlacion = String(required=True)
     causacion = String(required=True)

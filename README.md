@@ -12,9 +12,8 @@ Plan de implementación: [docs/plans/README.md](docs/plans/README.md). Evidencia
 - publica los resultados desde el outbox;
 - atiende HTTP: `/health/live`, `/health/ready` y consultas de sus propias cotizaciones.
 
-La integración con Orquestación y Seguimiento reales sigue pendiente: hoy se usa el doble
-etiquetado (`enviar_peticion.py`/`consumir_resultados.py`), porque esos dos servicios todavía no
-existen como código en el curso.
+La integración local con Entrada, Orquestación y Seguimiento reales está en `../integracion`.
+Incluye propuesta y rechazo; los scripts con dobles siguen disponibles para pruebas aisladas.
 
 Desde la Fase 08, el escritor publica el Record v2 de `CotizacionRegistrada.v1`
 (`version_contrato = 2`) con el campo opcional `duracion_estimada_minutos` (E3): ver
@@ -97,7 +96,7 @@ Las conexiones fijan `search_path=public`. El usuario de la base se llama igual 
 
 | Tópico | Contrato | Rol | Suscripción del servicio |
 |---|---|---|---|
-| `solicitar-cotizacion-v1` | `SolicitarCotizacion.v1` (propietario: Orquestación; aquí, propuesta lectora) | Consumidor Shared | `cotizaciones-peticiones-v1` |
+| `solicitar-cotizacion-v1` | `SolicitarCotizacion.v1` (propietario: Orquestación; aquí, copia lectora) | Consumidor Shared | `cotizaciones-peticiones-v1` |
 | `cotizacion-registrada-v1` | `CotizacionRegistrada.v1` | Productor | — |
 | `cotizacion-rechazada-v1` | `CotizacionRechazada.v1` | Productor | — |
 
@@ -137,11 +136,9 @@ docker compose exec -e COTIZACIONES_PULSAR_URL=pulsar://pulsar:6650 dev uv run -
 
 ## Integración con los otros servicios
 
-Hoy no existe integración real: Orquestación y Seguimiento no están implementados todavía como
-código en el curso, así que todo lo que sigue se ejercita con los dobles de laboratorio
-(`scripts/enviar_peticion.py`, `scripts/consumir_resultados.py`). Esta sección describe **cómo
-debe hacerse** la integración real cuando esos servicios existan, para que cada equipo la
-implemente contra el mismo contrato que ya usan las pruebas de Cotizaciones.
+Los cuatro repositorios están disponibles. El laboratorio `../integracion` prueba el recorrido
+HTTP de Entrada → Pulsar → Orquestación → Cotizaciones → Orquestación y Seguimiento,
+con procesos reales y bases independientes. Ver `../plan-alineacion/06-cotizaciones.md`.
 
 ### Contrato, no código
 
@@ -155,17 +152,17 @@ de integración son los tres tópicos de Pulsar y sus esquemas Avro publicados e
 | `cotizacion-registrada-v1` | `CotizacionRegistrada.v1` | Cotizaciones publica; Orquestación y Seguimiento consumen, cada uno con su propia suscripción |
 | `cotizacion-rechazada-v1` | `CotizacionRechazada.v1` | Cotizaciones publica; Orquestación y Seguimiento consumen, cada uno con su propia suscripción |
 
-Cada lector/escritor debe adoptar el `.avsc` **idéntico** (mismo nombre de record, sin namespace,
-mismos campos en el mismo orden y tipo): un nombre u orden distinto produce un esquema
-incompatible en el tópico y el broker lo rechaza. Los checksums en
-[docs/contratos/CHECKSUMS.sha256](docs/contratos/CHECKSUMS.sha256) permiten verificar que el
-archivo no cambió.
+El productor es dueño del esquema. El comando tiene fullname
+`orquestacion.eventos.SolicitarCotizacionV1`; los resultados no tienen namespace.
+Los lectores de resultados mantienen la revisión 1 y el orden del productor;
+la revisión 2 añade `duracion_estimada_minutos` nullable al final.
+Los checksums en [docs/contratos/CHECKSUMS.sha256](docs/contratos/CHECKSUMS.sha256)
+verifican los artefactos actuales. La compatibilidad se prueba también con bytes reales.
 
 ### Qué debe hacer Orquestación
 
-1. Adoptar `docs/contratos/solicitar-cotizacion-v1.avsc` **tal cual** para publicar
-   `SolicitarCotizacion.v1` — hoy esa copia es una propuesta lectora de Cotizaciones, no el
-   contrato definitivo de Orquestación, pero el esquema no puede diferir.
+1. Mantener su contrato propietario `SolicitarCotizacion.v1`. La copia de Cotizaciones
+   ya coincide con su namespace, campos y valores predeterminados.
 2. Publicar en `persistent://public/default/solicitar-cotizacion-v1`, con `command_id` y `tipo`
    como propiedades del mensaje y `id_trabajo` como clave de partición (reglas completas y qué
    hace Cotizaciones ante cada caso inválido en [docs/contratos/README.md](docs/contratos/README.md)).
@@ -305,11 +302,10 @@ de Pulsar (ver «Mensajería») y las consultas HTTP de este mismo servicio.
 
 ## Limitaciones
 
-- Sin Orquestación ni Seguimiento reales, toda integración cruzada usa dobles de laboratorio
-  (`scripts/enviar_peticion.py`, `scripts/consumir_resultados.py`); ningún flujo end-to-end real
-  entre los cuatro microservicios se ha ejecutado todavía.
-- El despliegue en Cloud Run está documentado (`docs/despliegue/cloud-run.md`) pero no ejecutado:
-  no existen proyecto, Cloud SQL ni clúster Pulsar del equipo en la fecha de este documento.
+- El flujo local integrado cubre propuesta y rechazo. No demuestra todavía E3/E4/E8
+  completos con los cuatro servicios ni recuperación integrada bajo fallas.
+- Cotizaciones no se ha desplegado en GCP en esta revisión. El entorno previo del equipo
+  permanece fuera del alcance de esta prueba local.
 - El rollback del escritor v2 de E3 tiene un límite estructural, no solo operativo: un hecho ya
   publicado con `version_contrato = 2` no se puede volver a emitir con el mapeador v1 (detalle en
   [docs/evidencias/08-evolucion-e3.md](docs/evidencias/08-evolucion-e3.md)).

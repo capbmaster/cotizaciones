@@ -30,3 +30,11 @@ Ejecutado con `docker-compose.imagen.yaml` (stack aislado, PostgreSQL y Pulsar p
 El cliente nativo (C++) de `pulsar-client` aborta el proceso (`terminate called without an active exception`) al cerrarse normalmente cuando corre bajo emulación QEMU `linux/amd64` sobre Apple Silicon — reproducido tanto en un script independiente como en uno anidado. **No ocurre en Cloud Run**, que ejecuta `amd64` nativo. Mientras tanto, `scripts/smoke_despliegue.py` evita el problema terminando con `os._exit()` en vez de dejar que el intérprete finalice normalmente (lo que evita el destructor del cliente). Documentado en el propio script.
 
 También se observó una corrupción del almacenamiento de BookKeeper en una corrida descartada del laboratorio de imagen (`ManagedLedgerException: Error while recovering ledger`), resuelta recreando los volúmenes del stack aislado (`docker compose -f docker-compose.imagen.yaml down -v`). No es un problema del código: es un artefacto de un Pulsar standalone desechable en un entorno de laboratorio.
+
+## Alineación local del 14 de septiembre de 2026
+
+Los hashes anteriores documentan la congelación histórica. La copia lectora de
+`SolicitarCotizacion.v1` se alineó después con su propietario, Orquestación:
+namespace `orquestacion.eventos` y defaults de tipo y versión. Su hash vigente
+está en `CHECKSUMS.sha256`. Los dos esquemas de resultados v1 congelados no se modificaron.
+La prueba integrada utiliza namespaces nuevos y no migra tópicos históricos.

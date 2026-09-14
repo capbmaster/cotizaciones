@@ -71,9 +71,18 @@ def test_nombre_orden_y_tipos_del_esquema(record: Any) -> None:
     esquema = record.schema()
     assert esquema["type"] == "record"
     assert esquema["name"] == nombre
-    assert "namespace" not in esquema
+    assert esquema.get("namespace") == (
+        "orquestacion.eventos" if record is SolicitarCotizacionV1 else None
+    )
     assert [(campo["name"], campo["type"]) for campo in esquema["fields"]] == campos
-    assert all("default" not in campo for campo in esquema["fields"])
+    defaults = {
+        campo["name"]: campo["default"] for campo in esquema["fields"] if "default" in campo
+    }
+    assert defaults == (
+        {"tipo": "SolicitarCotizacion.v1", "version_contrato": 1}
+        if record is SolicitarCotizacionV1
+        else {}
+    )
 
 
 def test_cantidad_de_campos_de_cada_contrato() -> None:

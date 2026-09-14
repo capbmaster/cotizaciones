@@ -1,6 +1,6 @@
 # Contratos de mensajería de Cotizaciones
 
-Serialización: Avro binario con el esquema registrado en Pulsar, **records sin namespace** y campos en el orden de los `.avsc`. Los `.ejemplo.json` ilustran el contenido con los IDs fijos de [00 §10](../plans/00-contratos-y-datos.md); no son el formato enviado. Los consumidores solo necesitan estos archivos: no importan clases, tablas ni el paquete Python del productor.
+Serialización: Avro binario con el esquema registrado en Pulsar, **resultados sin namespace y comando con namespace `orquestacion.eventos`** y campos en el orden de los `.avsc`. Los `.ejemplo.json` ilustran el contenido con los IDs fijos de [00 §10](../plans/00-contratos-y-datos.md); no son el formato enviado. Los consumidores solo necesitan estos archivos: no importan clases, tablas ni el paquete Python del productor.
 
 | Contrato | Record | Tópico | Propietario | Rol de Cotizaciones | Archivos |
 |---|---|---|---|---|---|
@@ -10,9 +10,12 @@ Serialización: Avro binario con el esquema registrado en Pulsar, **records sin 
 
 [CHECKSUMS.sha256](CHECKSUMS.sha256) contiene el SHA-256 de cada `.avsc` y ejemplo; `tests/contratos` lo verifica.
 
-## `SolicitarCotizacion.v1`: propuesta lectora pendiente de adopción
+## `SolicitarCotizacion.v1`: copia lectora del contrato de Orquestación
 
-**El contrato pertenece a Orquestación, que todavía no lo publica.** Este `.avsc` es la copia lectora provisional de Cotizaciones y se entrega para que Orquestación lo adopte **idéntico**: mismo nombre de record, mismo orden y mismos tipos. Un nombre u orden distintos producen un esquema incompatible en el tópico. Mientras tanto se usa el productor `scripts/enviar_peticion.py`, rotulado "DOBLE DE ORQUESTACION".
+**El contrato pertenece a Orquestación.** Esta copia lectora coincide con el productor real:
+fullname `orquestacion.eventos.SolicitarCotizacionV1`, mismo orden, tipos y defaults.
+El laboratorio `../../../integracion` prueba los cuatro servicios reales; el script
+`scripts/enviar_peticion.py` sigue siendo un doble para pruebas aisladas.
 
 **Clasificación: comando distribuido.** Pide una acción al propietario de las cotizaciones y puede fallar; todavía no representa un hecho.
 
@@ -47,7 +50,7 @@ Reglas que valida Cotizaciones:
 
 **Clasificación: eventos de integración.** Informan una resolución confirmada y llevan la carga necesaria para el efecto aguas abajo. Nadie debe llamar por HTTP al productor para completarlos.
 
-Cada resultado se publica **una sola vez** en su tópico, y cada suscripción recibe su copia:
+Cada resultado lógico se publica en su tópico mediante outbox (puede reentregarse tras fallas; los lectores deben ser idempotentes), y cada suscripción recibe su copia:
 
 | Tópico | Suscripciones |
 |---|---|
