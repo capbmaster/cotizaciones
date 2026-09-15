@@ -85,3 +85,16 @@ def test_close_se_puede_llamar_dos_veces() -> None:
     base = _crear()
     base.close()
     base.close()
+
+
+def test_connection_and_pool_waits_are_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    connect = Mock(side_effect=psycopg.OperationalError("offline"))
+    monkeypatch.setattr(psycopg, "connect", connect)
+    database = _crear()
+    try:
+        assert not database.verificar()
+        assert connect.call_args.kwargs["connect_timeout"] == 3
+        assert isinstance(database.engine.pool, QueuePool)
+        assert database.engine.pool.timeout() == 2
+    finally:
+        database.close()

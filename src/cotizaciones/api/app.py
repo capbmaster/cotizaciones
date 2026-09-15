@@ -8,8 +8,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from cotizaciones.api.cotizaciones import router as router_cotizaciones
 from cotizaciones.config.database import Database, create_database
+from cotizaciones.config.procesamiento import EstadoMensajeria, procesar_mensajeria
 from cotizaciones.config.settings import Settings
-from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
 from cotizaciones.seedwork.aplicacion.excepciones import ColisionPersistencia
 
 
@@ -48,6 +48,7 @@ def create_app(
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         database = database_factory(configuracion) if configuracion.database_url else None
         application.state.database = database
+        estado: EstadoMensajeria | None = None
         try:
             if database is None:
                 yield
@@ -58,7 +59,7 @@ def create_app(
         finally:
             application.state.estado_mensajeria = None
             application.state.database = None
-            if database is not None:
+            if database is not None and (estado is None or not estado.en_ejecucion()):
                 database.close()
 
     application = FastAPI(title="Cotizaciones", lifespan=lifespan)

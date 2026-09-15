@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from time import monotonic
@@ -11,6 +11,7 @@ from cotizaciones.seedwork.infraestructura.ciclos import (
     Procesamiento,
     iniciar_ciclo,
 )
+from cotizaciones.seedwork.infraestructura.despacho_outbox import DespachadorOutbox
 
 if TYPE_CHECKING:
     from cotizaciones.config.database import Database
@@ -24,6 +25,10 @@ _registro = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class EstadoMensajeria:
     componentes: tuple[EstadoComponente, ...] = ()
+    procesamientos: tuple[Procesamiento, ...] = ()
+
+    def en_ejecucion(self) -> bool:
+        return any(procesamiento.hilo.is_alive() for procesamiento in self.procesamientos)
 
     def listo(self) -> bool:
         return all(componente.esta_operando() for componente in self.componentes)
@@ -59,7 +64,6 @@ async def procesar_mensajeria(
         componer_despacho_resultados,
     )
     from cotizaciones.config.persistencia import verificar_destinos
-    from cotizaciones.infraestructura.despacho import NOMBRE_DESPACHO, iniciar_despacho
 
     await asyncio.to_thread(verificar_destinos, base)
     consumo = EstadoComponente("consumo-peticiones")
@@ -74,7 +78,32 @@ async def procesar_mensajeria(
             )
         )
         procesamientos.append(iniciar_despacho(despachador, despacho, cerrar=cerrar_publicador))
-        yield EstadoMensajeria((consumo, despacho))
+        yield EstadoMensajeria((consumo, despacho), tuple(procesamientos))
     finally:
         # Nunca ACK ni marcas del outbox como parte del apagado; tampoco unsubscribe.
         await asyncio.to_thread(detener_procesamientos, procesamientos)
+
+
+NOMBRE_DESPACHO = "despacho-resultados"
+LOTE = 1
+
+
+class ErrorPublicacion(RuntimeError):
+    """Ninguna salida se confirmó y la última falló; ya quedó reprogramada en el outbox."""
+
+
+def iniciar_despacho(
+    despachador: DespachadorOutbox,
+    estado: EstadoComponente,
+    cerrar: Callable[[], None] = lambda: None,
+    pausa_inactiva: float = 0.2,
+) -> Procesamiento:
+    def paso() -> bool:
+        confirmadas = despachador.despachar_lote(LOTE)
+        if despachador.ultimo_error is not None:
+            raise ErrorPublicacion(despachador.ultimo_error)
+        return confirmadas > 0
+
+    return iniciar_ciclo(
+        paso, NOMBRE_DESPACHO, estado, pausa_inactiva=pausa_inactiva, cerrar=cerrar
+    )

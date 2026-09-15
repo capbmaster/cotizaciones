@@ -96,7 +96,15 @@ class ConsumidorPeticiones:
             return False
         id_mensaje = self._identificador(mensaje)
         try:
-            comando = comando_desde_mensaje(mensaje.value())
+            record = mensaje.value()
+            comando = comando_desde_mensaje(record)
+            if mensaje.partition_key() != str(comando.datos.id_trabajo):
+                raise ValueError("La partition key debe corresponder al trabajo")
+            properties = mensaje.properties() or {}
+            if properties.get("command_id") != record.command_id:
+                raise ValueError("La propiedad command_id no coincide con el comando")
+            if properties.get("tipo") != record.tipo:
+                raise ValueError("La propiedad tipo no coincide con el comando")
         except Exception as error:
             raise MensajeVenenoso(id_mensaje, f"{type(error).__name__}: {error}") from error
         if self.retardo_laboratorio_ms > 0:

@@ -9,8 +9,8 @@ from sqlalchemy.exc import OperationalError
 
 from cotizaciones.api.app import create_app, get_settings
 from cotizaciones.config.database import Database
+from cotizaciones.config.procesamiento import EstadoMensajeria
 from cotizaciones.config.settings import Settings
-from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria
 from cotizaciones.seedwork.aplicacion.excepciones import ColisionPersistencia
 from cotizaciones.seedwork.infraestructura.ciclos import EstadoCiclo, EstadoComponente
 
@@ -249,3 +249,20 @@ def test_errores_de_persistencia_responden_503(error: Exception) -> None:
         respuesta = cliente.get("/prueba-fallo")
     assert respuesta.status_code == 503
     assert respuesta.json() == {"detail": "Persistencia temporalmente no disponible"}
+
+
+def test_shutdown_timeout_does_not_close_database_used_by_worker() -> None:
+    base = base_doble()
+    worker = Mock()
+    worker.hilo.is_alive.return_value = True
+    estado = EstadoMensajeria(procesamientos=(worker,))
+
+    @asynccontextmanager
+    async def processing(database: Database, settings: Settings) -> AsyncIterator[EstadoMensajeria]:
+        yield estado
+        raise TimeoutError("worker still running")
+
+    application = create_app(CON_BASE, Mock(return_value=base), processing)
+    with pytest.raises(TimeoutError, match="worker still running"), TestClient(application):
+        pass
+    base.close.assert_not_called()

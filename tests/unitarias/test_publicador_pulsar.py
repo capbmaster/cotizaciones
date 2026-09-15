@@ -179,3 +179,17 @@ def test_el_despachador_registra_y_limpia_el_ultimo_error() -> None:
     transporte.publicar.return_value = True
     assert despachador.despachar_lote() == 1
     assert despachador.ultimo_error is None
+
+
+def test_later_success_does_not_hide_failure_in_same_batch() -> None:
+    outbox = Mock(spec=RepositorioOutbox)
+    outbox.reclamar.return_value = [
+        Reserva(publicacion(), uuid4(), "A", datetime.now(UTC)),
+        Reserva(publicacion(), uuid4(), "A", datetime.now(UTC)),
+    ]
+    outbox.confirmar.return_value = True
+    transport = Mock()
+    transport.publicar.side_effect = [RuntimeError("offline"), True]
+    dispatcher = DespachadorOutbox(outbox, transport, "A")
+    assert dispatcher.despachar_lote(2) == 1
+    assert dispatcher.ultimo_error == "RuntimeError: offline"

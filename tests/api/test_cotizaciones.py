@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 from cotizaciones.api.app import create_app
 from cotizaciones.api.cotizaciones import obtener_consulta, obtener_listado
 from cotizaciones.config.database import Database
+from cotizaciones.config.procesamiento import EstadoMensajeria
 from cotizaciones.config.settings import Settings
-from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria
 from cotizaciones.modulos.cotizaciones.aplicacion.consultas import FiltroCotizaciones
 
 from ..unitarias.dominio.datos import A101, ID_COTIZACION, ID_PETICION, cotizacion_resuelta

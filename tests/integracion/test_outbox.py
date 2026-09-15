@@ -160,3 +160,16 @@ def test_destinos_desconocidos_solo_bloquean_mientras_estan_pendientes(base: Dat
     with base.engine.begin() as conexion:
         conexion.execute(update(SalidaSQL).values(enviada_en=func.clock_timestamp()))
     verificar_destinos(base)
+
+
+def test_expired_reservation_is_not_published(base: Database) -> None:
+    registrar_salidas(base, [evento_resuelto()])
+    outbox = RepositorioOutbox(base.session_factory)
+    reservation = outbox.reclamar("A", 1, timedelta(seconds=30))[0]
+    vencer_reservas(base)
+    transport = Transporte()
+    dispatcher = DespachadorOutbox(outbox, transport, "A")
+    with patch.object(outbox, "reclamar", return_value=[reservation]):
+        assert dispatcher.despachar_lote(1) == 0
+    assert transport.publicaciones == []
+    assert len(outbox.reclamar("B", 1, timedelta(seconds=30))) == 1

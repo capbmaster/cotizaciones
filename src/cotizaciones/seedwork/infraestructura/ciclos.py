@@ -110,6 +110,7 @@ def iniciar_ciclo(
     def ejecutar() -> None:
         estado.marcar_iniciando()
         fallos = 0
+        demora = min(espera_maxima_error, 0.4)
         try:
             while not detener.is_set():
                 try:
@@ -128,10 +129,12 @@ def iniciar_ciclo(
                     fallos += 1
                     estado.marcar_reintentando(error)
                     _registro.exception("Fallo en el ciclo %s (intento %d)", nombre, fallos)
-                    detener.wait(min(espera_maxima_error, 0.2 * 2**fallos))
+                    detener.wait(demora)
+                    demora = min(espera_maxima_error, demora * 2)
                     continue
                 estado.marcar_operando()
                 fallos = 0
+                demora = min(espera_maxima_error, 0.4)
                 if not hubo_trabajo:
                     detener.wait(pausa_inactiva)
         finally:

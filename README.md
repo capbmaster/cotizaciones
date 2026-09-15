@@ -20,6 +20,8 @@ Desde la Fase 08, el escritor publica el Record v2 de `CotizacionRegistrada.v1`
 [docs/evidencias/08-evolucion-e3.md](docs/evidencias/08-evolucion-e3.md) y
 [docs/experimentos/e3-cotizaciones.md](docs/experimentos/e3-cotizaciones.md).
 
+[Correcciones y verificación de la POC del 14 de septiembre](docs/correcciones-poc-2026-09-14.md).
+
 ## Arquitectura
 
 Un solo módulo Python (`cotizaciones`), arquitectura hexagonal por capas: `dominio` (puro, sin
@@ -27,6 +29,10 @@ dependencias de infraestructura), `aplicacion` (casos de uso y puertos), `infrae
 Avro, Pulsar) y un `seedwork` compartido por capa. Un único proceso por instancia (API HTTP,
 consumo de Pulsar y despacho del outbox conviven en los mismos hilos del `lifespan` de FastAPI;
 ver «Mensajería» más abajo) — no hay workers ni procesos separados que coordinar.
+
+La composición y el lifecycle viven en `config/procesamiento.py`; los adaptadores del
+contexto en `modulos/cotizaciones/infraestructura` y los mecanismos comunes en `seedwork`.
+El relay procesa una reserva por paso y el consumidor valida clave y properties del comando.
 
 ## Consultas
 

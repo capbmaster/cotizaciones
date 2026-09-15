@@ -18,7 +18,7 @@ from sqlalchemy import func, update
 from cotizaciones.api.app import create_app
 from cotizaciones.config.bootstrap import componer_despacho_resultados
 from cotizaciones.config.database import Database
-from cotizaciones.infraestructura.despacho import iniciar_despacho
+from cotizaciones.config.procesamiento import iniciar_despacho
 from cotizaciones.modulos.cotizaciones.dominio.objetos_valor import CatalogoVigente
 from cotizaciones.modulos.cotizaciones.infraestructura.esquemas.v1.comandos import (
     SolicitarCotizacionV1,

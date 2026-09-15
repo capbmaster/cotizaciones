@@ -39,6 +39,7 @@ def mensaje_pulsar(valor: Any = None, propiedades: dict[str, str] | None = None)
         if propiedades is None
         else propiedades
     )
+    mensaje.partition_key.return_value = MENSAJE_COMANDO_F1["id_trabajo"]
     mensaje.message_id.return_value = "10:3:-1"
     return mensaje
 
@@ -205,3 +206,26 @@ def test_configuracion_invalida_falla(opciones: dict[str, Any]) -> None:
             Mock(),
             **argumentos,
         )
+
+
+@pytest.mark.parametrize(
+    "invalid", ["missing-key", "wrong-key", "missing-properties", "wrong-id", "wrong-type"]
+)
+def test_invalid_transport_pauses_without_effects(invalid: str) -> None:
+    message = mensaje_pulsar()
+    if invalid == "missing-key":
+        message.partition_key.return_value = ""
+    elif invalid == "wrong-key":
+        message.partition_key.return_value = "another-work"
+    elif invalid == "missing-properties":
+        message.properties.return_value = {}
+    elif invalid == "wrong-id":
+        message.properties.return_value["command_id"] = "another-command"
+    else:
+        message.properties.return_value["tipo"] = "Another.v1"
+    consumer, _, transport, process = preparar(message)
+    with pytest.raises(MensajeVenenoso):
+        consumer.procesar_siguiente()
+    process.assert_not_called()
+    transport.acknowledge.assert_not_called()
+    transport.negative_acknowledge.assert_not_called()

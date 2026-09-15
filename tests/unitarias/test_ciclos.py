@@ -162,3 +162,43 @@ def test_el_resumen_del_componente_es_serializable() -> None:
     estado.marcar_operando()
     assert estado.resumen()["ultimo_exito"] is not None
     assert estado.esta_operando()
+
+
+def test_backoff_survives_1100_failures_and_resets_after_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from cotizaciones.seedwork.infraestructura import ciclos
+
+    delays: list[float] = []
+    attempts = 0
+
+    class ControlledEvent:
+        def is_set(self) -> bool:
+            return attempts >= 1103
+
+        def wait(self, timeout: float | None = None) -> bool:
+            assert timeout is not None
+            delays.append(timeout)
+            return False
+
+    class InlineThread:
+        def __init__(self, target: Callable[[], None], **kwargs: Any) -> None:
+            self.target = target
+
+        def start(self) -> None:
+            self.target()
+
+    def step() -> bool:
+        nonlocal attempts
+        attempts += 1
+        if attempts != 1101:
+            raise RuntimeError("unavailable")
+        return True
+
+    monkeypatch.setattr(ciclos, "Event", ControlledEvent)
+    monkeypatch.setattr(ciclos, "Thread", InlineThread)
+    monkeypatch.setattr(ciclos._registro, "exception", Mock())
+    iniciar_ciclo(step, "bounded-retries", EstadoComponente("test"))
+    assert attempts == 1103
+    assert max(delays) == 5.0
+    assert delays[-2:] == [0.4, 0.8]

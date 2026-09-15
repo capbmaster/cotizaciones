@@ -98,6 +98,19 @@ class RepositorioOutbox:
                 )
             return reservas
 
+    def reserva_vigente(self, reserva: Reserva) -> bool:
+        with self.crear_sesion() as session:
+            identity = session.scalar(
+                select(SalidaSQL.id).where(
+                    SalidaSQL.id == reserva.id,
+                    SalidaSQL.token == reserva.token,
+                    SalidaSQL.propietario == reserva.propietario,
+                    SalidaSQL.vence_en > func.clock_timestamp(),
+                    SalidaSQL.enviada_en.is_(None),
+                )
+            )
+            return identity is not None
+
     def confirmar(self, reserva: Reserva) -> bool:
         return self._actualizar(
             reserva,

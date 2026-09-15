@@ -15,7 +15,7 @@ from cotizaciones.config.database import create_database
 from cotizaciones.config.persistencia import crear_uow_cotizaciones, metadata
 from cotizaciones.seedwork.infraestructura.despacho_outbox import DespachadorOutbox
 from pulsar.schema import AvroSchema
-from cotizaciones.infraestructura.despacho import iniciar_despacho
+from cotizaciones.config.procesamiento import iniciar_despacho
 from cotizaciones.modulos.cotizaciones.infraestructura.consumidor_peticiones import (
     ConsumidorPeticiones,
 )
@@ -34,7 +34,7 @@ from cotizaciones.modulos.cotizaciones.infraestructura.mapeadores_eventos import
 from cotizaciones.seedwork.infraestructura.ciclos import iniciar_ciclo
 from cotizaciones.seedwork.infraestructura.publicador_pulsar import PublicadorPulsar
 from cotizaciones.config.settings import Settings
-from cotizaciones.infraestructura.ciclo_vida import EstadoMensajeria, procesar_mensajeria
+from cotizaciones.config.procesamiento import EstadoMensajeria, procesar_mensajeria
 from cotizaciones.modulos.cotizaciones.aplicacion.handlers.consultar_cotizaciones import (
     ConsultarCotizacionHandler,
     ListarCotizacionesHandler,
